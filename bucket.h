@@ -1,4 +1,7 @@
 
+#ifndef BUCKET_QUEUE_H
+#define BUCKET_QUEUE_H
+
 #include <stdio.h>
 #include <stdint.h>
 
@@ -14,8 +17,8 @@ struct QueueMetaData {
 };
 
 struct QueueItem {
-  uint16_t index;
   size_t bytesLen;
+  uint16_t index;
 };
 
 class Queue {
@@ -23,7 +26,7 @@ public:
   Queue(const char *name);
   ~Queue();
   void enqueue(char *buffer, size_t buffer_len);
-  void dequeue(char *buffer);
+  void dequeue(char *buffer, size_t *itemLen = nullptr);
   void head();
   void tail();
 
@@ -38,3 +41,4 @@ private:
 class Bucket {
   bool init();
 };
+#endif // BUCKET_QUEUE_H
