@@ -2,7 +2,7 @@
 #include <cstring>
 #include "bucket.h"
 
-#define TEST_ENABLED 1
+// #define TEST_ENABLED 1
 
 #define assertm(exp, msg) assert(((void)msg, exp))
 

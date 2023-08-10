@@ -7,7 +7,10 @@ int main() {
 #ifdef TEST_ENABLED
   test_enqueu_dequeu();
 #else
-  Queue q{"text.txt"};
+  // Queue q{"text.txt"};
+  Bucket bucket;
+  bucket.init("trip/v/sq");
+  Queue q = bucket.getQueue("12");
   q.enqueue("ahmad ori", sizeof("ahmad ori"));
   q.enqueue("bar table shadane bkoob", sizeof("bar table shadane bkoob"));
   q.enqueue("hala  k to dori o inja nisti", sizeof("hala  k to dori o inja nisti"));

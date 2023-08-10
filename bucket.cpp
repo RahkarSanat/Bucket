@@ -1,6 +1,7 @@
 #include "bucket.h"
 #include <cstring>
-#include <sys/stat.h>
+#include <errno.h>
+#include <cstdlib>
 
 Queue::Queue(const char *name) {
   strcpy(this->name, name);
@@ -83,5 +84,48 @@ void Queue::dequeue(char *buffer, size_t *itemLen) {
       updateState();
     } else
       printf("failed to read one item\n");
+  }
+}
+
+int Bucket::mkdirp(const char *path, mode_t mode) {
+  char *p = NULL;
+  char *tmp = strdup(path);
+  int len = strlen(tmp);
+
+  // Iterate over each component of the path
+  for (p = tmp + 1; *p; p++) {
+    if (*p == '/') {
+      *p = '\0';
+
+      // Create the directory if it doesn't exist
+      if (mkdir(tmp, mode) == -1 && errno != EEXIST) {
+        printf("::::::::::::::::::::::\n");
+        free(tmp);
+        return -1;
+      }
+
+      *p = '/';
+    }
+  }
+
+  // Create the final directory
+  if (mkdir(tmp, mode) == -1 && errno != EEXIST) {
+    printf("::::::::::::::::::::::\n");
+    free(tmp);
+    return -1;
+  }
+
+  free(tmp);
+  return 0;
+}
+
+Queue Bucket::getQueue(const char *name) {
+  char fullPath[100] = {0};
+  snprintf(fullPath, 100, "%s/%s", this->mBucketPath, name);
+  return Queue{fullPath};
+}
+
+Queue Bucket::init(const char *path) {
+  if (mkdirp(path, 777) == 0) {
   }
 }
