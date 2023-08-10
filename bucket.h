@@ -27,9 +27,10 @@ public:
   Queue(const char *name);
   ~Queue();
   void enqueue(char *buffer, size_t buffer_len);
-  void dequeue(char *buffer, size_t *itemLen = nullptr);
+  bool dequeue(char *buffer, size_t *itemLen = nullptr);
   void head();
   void tail();
+  bool at(uint16_t index, char *buffer, size_t *itemLen = nullptr);
 
 private:
   char name[QUEUE_NAME_MAX_LENGTH] = {0};
@@ -41,7 +42,7 @@ private:
 
 class Bucket {
 public:
-  Queue init(const char *path);
+  void init(const char *path);
   Queue getQueue(const char *name);
 
 private:
