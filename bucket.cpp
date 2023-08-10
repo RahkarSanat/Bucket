@@ -3,19 +3,22 @@
 #include <errno.h>
 #include <cstdlib>
 
-Queue::Queue(const char *name) {
+Queue::Queue(const char *name, const char *path) {
   strcpy(this->name, name);
+  if (path != nullptr)
+    strcpy(this->path, path);
+  char *validName = path == nullptr ? this->name : this->path;
   struct stat st;
-  if (stat(this->name, &st) == 0) {
+  if (stat(validName, &st) == 0) {
     printf("your same queue existed!\n");
-    if ((fd = fopen(name, "rb"))) {
+    if ((fd = fopen(validName, "rb"))) {
       fseek(fd, 0L, SEEK_SET); // at the file begining
       if (fread(&this->mState, sizeof(QueueMetaData), 1, fd) == 1) {
         isAvailable = true;
       }
     }
   } else {
-    if ((fd = fopen(name, "wb"))) {
+    if ((fd = fopen(validName, "wb"))) {
       this->mState = (QueueMetaData){.head = sizeof(QueueMetaData), .tail = sizeof(QueueMetaData), .count = 0, .index = 0};
       if (fwrite(&mState, sizeof(QueueMetaData), 1, fd)) {
         isAvailable = true;
@@ -50,7 +53,7 @@ void Queue::enqueue(char *buffer, size_t buffer_len) {
   // enqueu data
   if (this->isAvailable && (fd = fopen(this->name, "r+b"))) {
     int reds = fseek(fd, mState.tail, SEEK_SET);
-    QueueItem item = {.bytesLen = buffer_len, .index = mState.count + 1};
+    QueueItem item = {.bytesLen = buffer_len, .index = static_cast<uint16_t>(this->mState.count + (1))};
     this->mState.tail += fwrite(&item, (sizeof(size_t) + sizeof(uint16_t)), 1, fd) * (sizeof(size_t) + sizeof(uint16_t));
     size_t res = fwrite(buffer, buffer_len, 1, fd);
     this->mState.tail += res * buffer_len;
@@ -117,6 +120,26 @@ bool Queue::at(uint16_t index, char *buffer, size_t *itemLen) {
   return false;
 }
 
+bool Queue::isEmpty() const { return this->mState.count == 0; }
+
+bool Queue::rename(const char *newName, const Bucket *bucket) {
+  char src[100] = {0};
+  char dst[100] = {0};
+  if (bucket) {
+    // sprintf(src, "%s/%s", bucket->getPath(), this->name);
+    sprintf(dst, "%s/%s", bucket->getPath(), newName);
+  }
+  printf("----------- %s %s\n", src, newName);
+  errno = 0;
+  if (::rename(this->name, dst) == 0) {
+    std::strcpy(this->name, dst);
+    return true;
+  }
+  return false;
+}
+
+char *Queue::getName() { return this->name; }
+
 int Bucket::mkdirp(const char *path, mode_t mode) {
   char *p = NULL;
   char *tmp = strdup(path);
@@ -152,7 +175,7 @@ int Bucket::mkdirp(const char *path, mode_t mode) {
 Queue Bucket::getQueue(const char *name) {
   char fullPath[100] = {0};
   snprintf(fullPath, 100, "%s/%s", this->mBucketPath, name);
-  return Queue{fullPath};
+  return Queue{name, fullPath};
 }
 
 void Bucket::init(const char *path) {
@@ -161,3 +184,7 @@ void Bucket::init(const char *path) {
     printf("Failed to create active trip directory\n");
   }
 }
+
+const char *Bucket::getPath() const { return this->mBucketPath; }
+
+// Queue Bucket::move(Queue *queue, const Bucket *other) { queue->rename(); }

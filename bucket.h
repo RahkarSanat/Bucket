@@ -22,19 +22,24 @@ struct QueueItem {
   uint16_t index;
 };
 
+class Bucket;
 class Queue {
 public:
-  Queue(const char *name);
+  Queue(const char *name, const char *path = nullptr);
   ~Queue();
   void enqueue(char *buffer, size_t buffer_len);
   bool dequeue(char *buffer, size_t *itemLen = nullptr);
   void head();
   void tail();
   bool at(uint16_t index, char *buffer, size_t *itemLen = nullptr);
+  bool isEmpty() const;
+  bool rename(const char *newName, const Bucket *bucket);
+  char *getName();
 
 private:
-  char name[QUEUE_NAME_MAX_LENGTH] = {0};
   FILE *fd;
+  char name[QUEUE_NAME_MAX_LENGTH] = {0};
+  char path[2 * QUEUE_NAME_MAX_LENGTH] = {0};
   QueueMetaData mState;
   bool isAvailable = false;
   void updateState();
@@ -44,6 +49,8 @@ class Bucket {
 public:
   void init(const char *path);
   Queue getQueue(const char *name);
+  const char *getPath() const;
+  Queue move(Queue *queue, const Bucket *other);
 
 private:
   int mkdirp(const char *path, mode_t mode);
