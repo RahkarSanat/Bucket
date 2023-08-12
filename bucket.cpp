@@ -4,6 +4,7 @@
 #include <cstdlib>
 
 Queue::Queue(const char *name, const char *path) {
+  FILE *fd = nullptr;
   strcpy(this->name, name);
   if (path != nullptr)
     strcpy(this->path, path);
@@ -31,12 +32,7 @@ Queue::Queue(const char *name, const char *path) {
   }
 }
 
-Queue::~Queue() {
-  if (fd) {
-    fclose(fd);
-    fd = nullptr;
-  }
-}
+Queue::~Queue() {}
 
 void Queue::updateState() {
   FILE *fd;
@@ -52,7 +48,7 @@ void Queue::updateState() {
 }
 
 void Queue::enqueue(char *buffer, size_t buffer_len) {
-  // enqueu data
+  FILE *fd = nullptr;
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
   if (this->isAvailable && (fd = fopen(validPath, "r+b"))) {
     int reds = fseek(fd, mState.tail, SEEK_SET);
@@ -61,39 +57,40 @@ void Queue::enqueue(char *buffer, size_t buffer_len) {
     size_t res = fwrite(buffer, buffer_len, 1, fd);
     this->mState.tail += res * buffer_len;
     this->mState.count += res;
-    this->updateState();
     fclose(fd);
     fd = nullptr;
+    this->updateState();
   }
 }
 
 bool Queue::dequeue(char *buffer, size_t *itemLen) {
-  // open file
+  FILE *fd = nullptr;
   QueueItem item;
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
   if (this->isAvailable && (fd = fopen(validPath, "rb"))) {
     fseek(fd, this->mState.head, SEEK_SET);
     fread(&item, (sizeof(size_t) + sizeof(uint16_t)), 1, fd);
     if (this->mState.head == this->mState.tail) {
+      fclose(fd);
       return false;
     }
     if (!buffer) {
       *itemLen = item.bytesLen;
       fclose(fd);
-      fd = nullptr;
       return true;
     }
     fseek(fd, this->mState.head + (sizeof(size_t) + sizeof(uint16_t)), SEEK_SET);
     if (fread(buffer, item.bytesLen, 1, fd) == 1) {
       this->mState.head += item.bytesLen + (sizeof(size_t) + sizeof(uint16_t));
       fclose(fd);
-      fd = nullptr;
+      ++this->mState.index;
       updateState();
       return true;
     } else
       printf("failed to read one item\n");
-    return false;
+    fclose(fd);
   }
+  return false;
 }
 
 bool Queue::at(uint16_t index, char *buffer, size_t *itemLen) {
@@ -153,6 +150,14 @@ bool Queue::move(const Bucket *other) {
 const char *Queue::getName() const { return this->name; }
 
 const QueueMetaData *const Queue::getMetaData() const { return &this->mState; }
+
+off_t Queue::byteSize() const {
+  struct stat st;
+  if (stat(this->path, &st) == 0) {
+    return st.st_size;
+  }
+  return -1;
+}
 
 int Bucket::mkdirp(const char *path, mode_t mode) {
   char *p = NULL;

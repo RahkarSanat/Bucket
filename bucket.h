@@ -37,9 +37,9 @@ public:
   bool move(const Bucket *other);
   const char *getName() const;
   const QueueMetaData *const getMetaData() const;
+  off_t byteSize() const;
 
 private:
-  FILE *fd;
   char name[QUEUE_NAME_MAX_LENGTH] = {0};
   char path[2 * QUEUE_NAME_MAX_LENGTH] = {0};
   QueueMetaData mState;
