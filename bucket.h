@@ -34,7 +34,9 @@ public:
   bool at(uint16_t index, char *buffer, size_t *itemLen = nullptr);
   bool isEmpty() const;
   bool rename(const char *newName, const Bucket *bucket);
-  char *getName();
+  bool move(const Bucket *other);
+  const char *getName() const;
+  const QueueMetaData *const getMetaData() const;
 
 private:
   FILE *fd;
@@ -43,14 +45,14 @@ private:
   QueueMetaData mState;
   bool isAvailable = false;
   void updateState();
-};
+}; //
 
 class Bucket {
 public:
   void init(const char *path);
   Queue getQueue(const char *name);
   const char *getPath() const;
-  Queue move(Queue *queue, const Bucket *other);
+  bool removeQueue(const char *name);
 
 private:
   int mkdirp(const char *path, mode_t mode);

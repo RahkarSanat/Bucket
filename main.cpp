@@ -13,46 +13,37 @@ int main() {
   {
     Queue q = bucket.getQueue("12");
     printf("queue is %s\n", q.isEmpty() ? "Empty" : "Not Empty");
-    q.enqueue("First Item", sizeof("ahmad ori"));
-    bool res = q.rename("13", &bucket);
+    q.enqueue("First Item", sizeof("First Item"));
+    q.enqueue("Second Item", sizeof("Second Item"));
+    q.enqueue("Third Item", sizeof("Third Item"));
+
+    Bucket bucket2;
+    bucket2.init("test/sq/v/trip/");
+    bool res = q.rename("13", &bucket2);
     printf("00000000000 %s\n", strerror(errno));
+    auto test = q.getMetaData();
+    printf("Queue head: %d\n\ttail: %d\n\titems: %d\n\tindex: %d\n", test->head, test->tail, test->count, test->index);
+
+    // printf("removed file: %d\n", bucket.removeQueue("13"));
   }
 
-  {
-    Queue q = bucket.getQueue("13");
-    printf("queue is %s\n", q.isEmpty() ? "Empty" : "Not Empty");
-    // char buffer[40] = {0};
-    // q.dequeue(buffer);
-    // printf("data is %s\n", buffer);
-    bool res = q.rename("14", &bucket);
-    printf("00000000000 %s\n", strerror(errno));
-  }
+  // {
+  //   Queue q = bucket.getQueue("13");
+  //   printf("queue is %s\n", q.isEmpty() ? "Empty" : "Not Empty");
+  //   char buffer[40] = {0};
+  //   q.dequeue(buffer);
+  //   printf("data is %s\n", buffer);
+  //   bool res = q.rename("14", &bucket);
+  //   printf("00000000000 %s\n", strerror(errno));
+  // }
 
-  {
-    Queue q = bucket.getQueue("14");
-    printf("queue is %s\n", q.isEmpty() ? "Empty" : "Not Empty");
-    char buffer[40] = {0};
-    q.dequeue(buffer);
-    printf("data is %s\n", buffer);
-  }
-
-  // q.enqueue("ahmad ori", sizeof("ahmad ori"));
-  // q.enqueue("bar table shadane bkoob", sizeof("bar table shadane bkoob"));
-  // q.enqueue("hala  k to dori o inja nisti", sizeof("hala  k to dori o inja nisti"));
-  // char buffer[40] = {0};
-  // q.dequeue(buffer);
-  // q.dequeue(buffer);
-  // q.dequeue(buffer);
-  // printf(":::::::::::::::::::::::::::::::::\n");
-  // q.dequeue(buffer);
-
-  // char atData[100] = {0};
-  // bool result = q.at(15, atData, nullptr);
-  // if (result)
-  //   printf("Data at item %d is :%s\n", 16, atData);
-  // else
-  //   printf("Item with given id doesnt exist\n");
-  // printf("queue is %s\n", q.isEmpty() ? "Empty" : "Not Empty");
+  // {
+  //   Queue q = bucket.getQueue("14");
+  //   printf("queue is %s\n", q.isEmpty() ? "Empty" : "Not Empty");
+  //   Bucket newbucket;
+  //   bucket.init("hello/world");
+  //   q.move(&bucket);
+  // }
 
 #endif
   // size_t t = 86;

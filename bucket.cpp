@@ -40,7 +40,9 @@ Queue::~Queue() {
 
 void Queue::updateState() {
   FILE *fd;
-  if ((fd = fopen(this->name, "r+b"))) {
+  char *validPath = strlen(this->path) == 0 ? this->name : this->path;
+
+  if ((fd = fopen(validPath, "r+b"))) {
     fseek(fd, 0, SEEK_SET);
     fwrite(&this->mState, sizeof(QueueMetaData), 1, fd);
     fclose(fd);
@@ -51,7 +53,8 @@ void Queue::updateState() {
 
 void Queue::enqueue(char *buffer, size_t buffer_len) {
   // enqueu data
-  if (this->isAvailable && (fd = fopen(this->name, "r+b"))) {
+  char *validPath = strlen(this->path) == 0 ? this->name : this->path;
+  if (this->isAvailable && (fd = fopen(validPath, "r+b"))) {
     int reds = fseek(fd, mState.tail, SEEK_SET);
     QueueItem item = {.bytesLen = buffer_len, .index = static_cast<uint16_t>(this->mState.count + (1))};
     this->mState.tail += fwrite(&item, (sizeof(size_t) + sizeof(uint16_t)), 1, fd) * (sizeof(size_t) + sizeof(uint16_t));
@@ -67,7 +70,8 @@ void Queue::enqueue(char *buffer, size_t buffer_len) {
 bool Queue::dequeue(char *buffer, size_t *itemLen) {
   // open file
   QueueItem item;
-  if (this->isAvailable && (fd = fopen(this->name, "rb"))) {
+  char *validPath = strlen(this->path) == 0 ? this->name : this->path;
+  if (this->isAvailable && (fd = fopen(validPath, "rb"))) {
     fseek(fd, this->mState.head, SEEK_SET);
     fread(&item, (sizeof(size_t) + sizeof(uint16_t)), 1, fd);
     if (this->mState.head == this->mState.tail) {
@@ -95,7 +99,9 @@ bool Queue::dequeue(char *buffer, size_t *itemLen) {
 bool Queue::at(uint16_t index, char *buffer, size_t *itemLen) {
   QueueItem item;
   FILE *fd = nullptr;
-  if ((fd = fopen(this->name, "rb"))) {
+  char *validPath = strlen(this->path) == 0 ? this->name : this->path;
+
+  if ((fd = fopen(validPath, "rb"))) {
     // loop to find the index
     size_t currentPos = sizeof(QueueMetaData);
     while (currentPos <= this->mState.tail) {
@@ -107,9 +113,10 @@ bool Queue::at(uint16_t index, char *buffer, size_t *itemLen) {
         fread(buffer, item.bytesLen, 1, fd);
         fclose(fd);
         return true;
-      } else {
-        printf("not found yet %d %d %d\n", item.index, item.bytesLen, this->mState.tail);
       }
+      // else {
+      //   printf("not found yet %d %d %d\n", item.index, item.bytesLen, this->mState.tail);
+      // }
       currentPos += item.bytesLen + (sizeof(size_t) + sizeof(uint16_t));
     }
     fclose(fd);
@@ -123,28 +130,34 @@ bool Queue::at(uint16_t index, char *buffer, size_t *itemLen) {
 bool Queue::isEmpty() const { return this->mState.count == 0; }
 
 bool Queue::rename(const char *newName, const Bucket *bucket) {
-  char src[100] = {0};
   char dst[100] = {0};
+  char *validPath = strlen(this->path) == 0 ? this->name : this->path;
+
   if (bucket) {
-    // sprintf(src, "%s/%s", bucket->getPath(), this->name);
     sprintf(dst, "%s/%s", bucket->getPath(), newName);
   }
-  printf("----------- %s %s\n", src, newName);
   errno = 0;
-  if (::rename(this->name, dst) == 0) {
-    std::strcpy(this->name, dst);
+  if (::rename(validPath, dst) == 0) {
+    std::strcpy(validPath, dst);
     return true;
   }
   return false;
 }
 
-char *Queue::getName() { return this->name; }
+bool Queue::move(const Bucket *other) {
+  // is identical to queue rename but more classy
+  // use the file name and the other bucket path to generate dst path
+  return this->rename(this->getName(), other);
+}
+
+const char *Queue::getName() const { return this->name; }
+
+const QueueMetaData *const Queue::getMetaData() const { return &this->mState; }
 
 int Bucket::mkdirp(const char *path, mode_t mode) {
   char *p = NULL;
   char *tmp = strdup(path);
   int len = strlen(tmp);
-  int temp = umask(0);
   // Iterate over each component of the path
   for (p = tmp + 1; *p; p++) {
     if (*p == '/') {
@@ -163,7 +176,6 @@ int Bucket::mkdirp(const char *path, mode_t mode) {
 
   // Create the final directory
   if (mkdir(tmp, mode) == -1 && errno != EEXIST) {
-    printf("::::::::::::::::::::::\n");
     free(tmp);
     return -1;
   }
@@ -185,6 +197,16 @@ void Bucket::init(const char *path) {
   }
 }
 
+bool Bucket::removeQueue(const char *name) {
+  // check if queue exists
+  char path[100] = {0};
+  struct stat st;
+  sprintf(path, "%s/%s", this->mBucketPath, name);
+  if (stat(path, &st) == 0) {
+    // remove the file
+    errno = 0;
+    return remove(path) == 0;
+  }
+  return false;
+}
 const char *Bucket::getPath() const { return this->mBucketPath; }
-
-// Queue Bucket::move(Queue *queue, const Bucket *other) { queue->rename(); }

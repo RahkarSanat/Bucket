@@ -7,12 +7,13 @@ run:all
 
 debug:
 	[ -d build ] || mkdir build
-	g++ -g main.cpp bucket.cpp -o build/bucket 
+	@g++ -g main.cpp bucket.cpp -o build/bucket 
+	@g++ -g main.cpp bucket.cpp -DTEST_ENABLED -o build/bucket.tst 
 
 test:
 	[ -d build ] || mkdir build
 	@mkdir testfiles
-	@g++ main.cpp bucket.cpp -DTEST_ENABLED -o build/bucket.tst
+	@g++ -g main.cpp bucket.cpp -DTEST_ENABLED -o build/bucket.tst
 	@echo ----------------- Compilation Ends ------------------------------
 	@./build/bucket.tst
 	@rm -rf testfiles

@@ -70,7 +70,6 @@ void test_bucket_get_queue() {
   assertm(item_length == sizeof(test_data), "Item length is not true");
   char *data = new char[item_length];
   bool result = q.dequeue(data);
-  printf(">>>>>>>>>>>> %s\n", data);
 
   assertm(strcmp(data, test_data) == 0, "Items are not equal");
   assertm(result, "Result value is not ok");
@@ -92,7 +91,6 @@ void test_bucket_get_queue() {
   data = new char[item_length];
   result = q.dequeue(data);
   assertm(result, "Result value is not ok");
-  printf(">>>>>>>>>>>> %s\n", data);
 }
 
 void test_rename_queue_same_bucket() {
@@ -100,28 +98,21 @@ void test_rename_queue_same_bucket() {
   bucket.init("testfiles/test_rename_queue_same_bucket/sq/v/a/trip");
   {
     Queue q = bucket.getQueue("12");
-    printf("queue is %s\n", q.isEmpty() ? "Empty" : "Not Empty");
     q.enqueue("First Item", sizeof("ahmad ori"));
     bool res = q.rename("13", &bucket);
-    printf("00000000000 %s\n", strerror(errno));
   }
 
   {
     Queue q = bucket.getQueue("13");
-    printf("queue is %s\n", q.isEmpty() ? "Empty" : "Not Empty");
     // char buffer[40] = {0};
     // q.dequeue(buffer);
-    // printf("data is %s\n", buffer);
     bool res = q.rename("14", &bucket);
-    printf("00000000000 %s\n", strerror(errno));
   }
 
   {
     Queue q = bucket.getQueue("14");
-    printf("queue is %s\n", q.isEmpty() ? "Empty" : "Not Empty");
     char buffer[40] = {0};
     q.dequeue(buffer);
-    printf("data is %s\n", buffer);
   }
 }
 
