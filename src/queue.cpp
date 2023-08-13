@@ -4,6 +4,8 @@
 #include "queue.h"
 #include "bucket.h"
 
+using QueueItemType = QueueItem;
+
 Queue::Queue(const char *name, const char *path) {
   FILE *fd = nullptr;
   strcpy(this->name, name);
@@ -54,7 +56,7 @@ void Queue::enqueue(const char *buffer, size_t buffer_len) {
   if (this->isAvailable && (fd = fopen(validPath, "r+b"))) {
     int reds = fseek(fd, mState.tail, SEEK_SET);
     QueueItem item = {.bytesLen = buffer_len, .index = static_cast<uint16_t>(this->mState.count + (1))};
-    this->mState.tail += fwrite(&item, (sizeof(size_t) + sizeof(uint16_t)), 1, fd) * (sizeof(size_t) + sizeof(uint16_t));
+    this->mState.tail += fwrite(&item, (sizeof(QueueItem)), 1, fd) * ((sizeof(QueueItem)));
     size_t res = fwrite(buffer, buffer_len, 1, fd);
     this->mState.tail += res * buffer_len;
     this->mState.count += res;
@@ -70,7 +72,7 @@ bool Queue::dequeue(char *buffer, size_t *itemLen) {
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
   if (this->isAvailable && (fd = fopen(validPath, "rb"))) {
     fseek(fd, this->mState.head, SEEK_SET);
-    fread(&item, (sizeof(size_t) + sizeof(uint16_t)), 1, fd);
+    fread(&item, ((sizeof(QueueItem))), 1, fd);
     if (this->mState.head == this->mState.tail) {
       fclose(fd);
       return false;
@@ -80,9 +82,9 @@ bool Queue::dequeue(char *buffer, size_t *itemLen) {
       fclose(fd);
       return true;
     }
-    fseek(fd, this->mState.head + (sizeof(size_t) + sizeof(uint16_t)), SEEK_SET);
+    fseek(fd, this->mState.head + ((sizeof(QueueItem))), SEEK_SET);
     if (fread(buffer, item.bytesLen, 1, fd) == 1) {
-      this->mState.head += item.bytesLen + (sizeof(size_t) + sizeof(uint16_t));
+      this->mState.head += item.bytesLen + ((sizeof(QueueItem)));
       fclose(fd);
       ++this->mState.index;
       updateState();
@@ -105,14 +107,14 @@ bool Queue::at(uint16_t index, char *buffer, size_t *itemLen) {
     while (currentPos <= this->mState.tail) {
       fseek(fd, currentPos, SEEK_SET);
       std::memset(&item, 0, sizeof(item));
-      fread(&item, (sizeof(size_t) + sizeof(uint16_t)), 1, fd);
+      fread(&item, ((sizeof(QueueItem))), 1, fd);
       if (item.index == index) {
         printf("Found the Item at %d %d \n", item.index, item.bytesLen);
         fread(buffer, item.bytesLen, 1, fd);
         fclose(fd);
         return true;
       }
-      currentPos += item.bytesLen + (sizeof(size_t) + sizeof(uint16_t));
+      currentPos += item.bytesLen + ((sizeof(QueueItem)));
     }
     fclose(fd);
   } else {
