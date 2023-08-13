@@ -198,7 +198,7 @@ Queue Bucket::getQueue(const char *name) {
 void Bucket::init(const char *path) {
   std::strcpy(this->mBucketPath, path);
   if (mkdirp(path, 0777) != 0) {
-    printf("Failed to create active trip directory\n");
+    printf("Failed to [ %s ] directory\n", path);
   }
 }
 
