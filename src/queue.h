@@ -19,6 +19,7 @@ struct QueueMetaData {
 struct QueueItem {
   size_t bytesLen;
   uint16_t index;
+  uint8_t check;
 };
 
 class Queue {
