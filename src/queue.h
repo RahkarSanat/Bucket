@@ -27,8 +27,8 @@ public:
   Queue(const char *name, const char *path = nullptr);
   ~Queue();
   void enqueue(const char *buffer, size_t buffer_len);
-  bool dequeue(char *buffer, size_t *itemLen = nullptr);
-  void head();
+  void dequeue(const size_t itemLen);
+  bool head(char *buffer, size_t *itemLen = nullptr, bool dequeue = false);
   void tail();
   bool at(uint16_t index, char *buffer, size_t *itemLen = nullptr);
   bool isEmpty() const;

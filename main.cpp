@@ -34,17 +34,22 @@ int main() {
     printf("queue is %s\n", q.isEmpty() ? "Empty" : "Not Empty");
     char buffer[40] = {0};
     auto test = q.getMetaData();
-    q.dequeue(buffer);
-    printf("Queue head: %d\n\ttail: %d\n\titems: %d\n\tindex: %d\n", test->head, test->tail, test->count, test->index);
-    q.dequeue(buffer);
-    printf("Queue head: %d\n\ttail: %d\n\titems: %d\n\tindex: %d\n", test->head, test->tail, test->count, test->index);
-    q.dequeue(buffer);
+    size_t item_length = 0;
+    q.head(buffer, &item_length);
+    printf("Queue head: %d\n\ttail: %d\n\titems: %d\n\tindex: %d\n\treadLength: %d\n", test->head, test->tail, test->count,
+           test->index, item_length);
+    q.head(buffer, &item_length);
+    printf("Queue head: %d\n\ttail: %d\n\titems: %d\n\tindex: %d\n\treadLength: %d\n", test->head, test->tail, test->count,
+           test->index, item_length);
+    q.dequeue(item_length);
+    q.head(buffer, &item_length);
+    printf("Queue head: %d\n\ttail: %d\n\titems: %d\n\tindex: %d\n\treadLength: %d\n", test->head, test->tail, test->count,
+           test->index, item_length);
 
     // printf("data is %s\n", buffer);
     // bool res = q.rename("14", &bucket);
     // printf("00000000000 %s\n", strerror(errno));
     // auto test = q.getMetaData();
-    printf("Queue head: %d\n\ttail: %d\n\titems: %d\n\tindex: %d\n", test->head, test->tail, test->count, test->index);
     // printf("removed file: %d\n", bucket.removeQueue("13"));
   }
 

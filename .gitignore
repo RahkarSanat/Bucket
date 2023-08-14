@@ -10,7 +10,7 @@
 # Precompiled Headers
 *.gch
 *.pch
-*.txt
+# *.txt
 
 # Compiled Dynamic libraries
 *.so
@@ -34,3 +34,5 @@
 
 build/*
 test/*
+
+tests/build/*
