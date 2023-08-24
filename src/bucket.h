@@ -13,6 +13,7 @@ class Bucket {
 public:
   void init(const char *path);
   Queue getQueue(const char *name);
+  bool getExistingQueue(const char *name, Queue *queue);
   const char *getPath() const;
   bool removeQueue(const char *name);
 

@@ -39,6 +39,17 @@ Queue Bucket::getQueue(const char *name) {
   return Queue{name, fullPath};
 }
 
+bool Bucket::getExistingQueue(const char *name, Queue *queue) {
+  struct stat st;
+  char fullPath[100] = {0};
+  snprintf(fullPath, 100, "%s/%s", this->mBucketPath, name);
+  if (stat(fullPath, &st) == 0) {
+    *queue = Queue{name, fullPath};
+    return true;
+  }
+  return false;
+}
+
 void Bucket::init(const char *path) {
   std::strcpy(this->mBucketPath, path);
   if (mkdirp(path, 0777) != 0) {

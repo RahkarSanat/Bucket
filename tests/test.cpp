@@ -52,6 +52,22 @@ TEST_CASE("Test for Enqueue and Dequeue With strlen() correctly") {
   SECTION("Tear Down") { REQUIRE(remove("name") == 0); }
 }
 
+TEST_CASE("test_rename_change_internal_path_in_bucket") {
+
+  SECTION("testSec") {
+    Bucket bucket;
+    bucket.init("test/rename/queue/path/");
+    Bucket bucket2;
+    bucket2.init("test/rename/queue/path/2");
+    Queue q = bucket.getQueue("name");
+    q.move(&bucket2);
+    printf("%s\n", q.getPath());
+    REQUIRE(strcmp(q.getPath(), "test/rename/queue/path/2/name") == 0);
+  }
+
+  SECTION("Tear Down") { REQUIRE(remove("test/rename/queue/path/2/name") == 0); }
+}
+
 TEST_CASE("Test for Enqueue with different sizes") {
 
   SECTION("testSec") {
@@ -91,4 +107,16 @@ TEST_CASE("Test bucket creation") {
     REQUIRE(stat("test/bucket/created", &st) == 0);
   }
   //   SECTION("Tear Down") { REQUIRE(remove("name") == 0); }
+}
+
+TEST_CASE("Test getting existing queue") {
+
+  SECTION("testSec") {
+    Bucket bucket;
+    bucket.init("test/bucket/test/getExist");
+    bucket.getQueue("13");
+    Queue temp;
+    REQUIRE(bucket.getExistingQueue("13", &temp) == true);
+    REQUIRE(bucket.getExistingQueue("14", &temp) == false);
+  }
 }

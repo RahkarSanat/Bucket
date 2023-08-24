@@ -24,6 +24,7 @@ struct QueueItem {
 
 class Queue {
 public:
+  Queue();
   Queue(const char *name, const char *path = nullptr);
   ~Queue();
   void enqueue(const char *buffer, size_t buffer_len);
@@ -35,6 +36,7 @@ public:
   bool rename(const char *newName, const Bucket *bucket);
   bool move(const Bucket *other);
   const char *getName() const;
+  const char *getPath() const;
   const QueueMetaData *const getMetaData() const;
   off_t byteSize() const;
 
@@ -44,6 +46,6 @@ private:
   QueueMetaData mState;
   bool isAvailable = false;
   void updateState();
-};     //
+}; //
 
 #endif // RS_BUCKET_QUEUE_H

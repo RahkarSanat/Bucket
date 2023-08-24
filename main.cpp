@@ -1,8 +1,9 @@
 #include <iostream>
+#include <sys/mman.h>
 #include <cstring>
 #include "bucket.h"
 #include "queue"
-#include "tests.h"
+// #include "tests.h"
 
 int main() {
 #ifdef TEST_ENABLED
@@ -18,49 +19,14 @@ int main() {
     q.enqueue("Second Item", sizeof("Second Item"));
     q.enqueue("Third Item", sizeof("Third Item"));
 
-    Bucket bucket2;
-    bucket2.init("test/sq/v/trip/");
-    bool res = q.rename("13", &bucket2);
-    printf("00000000000 %s\n", strerror(errno));
-    auto test = q.getMetaData();
-    printf("Queue head: %d\n\ttail: %d\n\titems: %d\n\tindex: %d\n", test->head, test->tail, test->count, test->index);
-    // printf("removed file: %d\n", bucket.removeQueue("13"));
+    FILE *fd = fopen("test/sq/v/a/trip/12", "rb");
+    struct stat st;
+    if (fd != nullptr && stat("test/sq/v/a/trip/12", &st) == 0) {
+      char *data = (char *)mmap(nullptr, st.st_size, PROT_READ, MAP_PRIVATE, fileno(fd), 0);
+      for (int i = 0; i < 100; i++)
+        printf("%d", data[i]);
+    }
   }
-
-  {
-    Bucket bucket;
-    bucket.init("test/sq/v/trip");
-    Queue q = bucket.getQueue("13");
-    printf("queue is %s\n", q.isEmpty() ? "Empty" : "Not Empty");
-    char buffer[40] = {0};
-    auto test = q.getMetaData();
-    size_t item_length = 0;
-    q.head(buffer, &item_length);
-    printf("Queue head: %d\n\ttail: %d\n\titems: %d\n\tindex: %d\n\treadLength: %d\n", test->head, test->tail, test->count,
-           test->index, item_length);
-    q.head(buffer, &item_length);
-    printf("Queue head: %d\n\ttail: %d\n\titems: %d\n\tindex: %d\n\treadLength: %d\n", test->head, test->tail, test->count,
-           test->index, item_length);
-    q.dequeue(item_length);
-    q.head(buffer, &item_length);
-    printf("Queue head: %d\n\ttail: %d\n\titems: %d\n\tindex: %d\n\treadLength: %d\n", test->head, test->tail, test->count,
-           test->index, item_length);
-
-    // printf("data is %s\n", buffer);
-    // bool res = q.rename("14", &bucket);
-    // printf("00000000000 %s\n", strerror(errno));
-    // auto test = q.getMetaData();
-    // printf("removed file: %d\n", bucket.removeQueue("13"));
-  }
-
-  // {
-  //   Queue q = bucket.getQueue("14");
-  //   printf("queue is %s\n", q.isEmpty() ? "Empty" : "Not Empty");
-  //   Bucket newbucket;
-  //   bucket.init("hello/world");
-  //   q.move(&bucket);
-  // }
-
 #endif
   // size_t t = 86;
 

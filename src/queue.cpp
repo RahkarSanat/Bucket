@@ -35,6 +35,8 @@ Queue::Queue(const char *name, const char *path) {
   }
 }
 
+Queue::Queue() {}
+
 Queue::~Queue() {}
 
 void Queue::updateState() {
@@ -158,6 +160,7 @@ bool Queue::move(const Bucket *other) {
 }
 
 const char *Queue::getName() const { return this->name; }
+const char *Queue::getPath() const { return this->path; }
 
 const QueueMetaData *const Queue::getMetaData() const { return &this->mState; }
 
