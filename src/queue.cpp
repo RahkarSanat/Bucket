@@ -183,10 +183,11 @@ QueueItem Queue::at(uint16_t index) {
     }
     fclose(fd);
   } else {
-    printf("Failed to read the queue\n");
-    item.check = 2;
-    return item;
+    printf("No such Queue!\n");
   }
+  printf("no Queue with provided index\n");
+  item.check = 2;
+  return item;
 }
 
 bool Queue::isEmpty() const { return this->mState.count == 0; }
