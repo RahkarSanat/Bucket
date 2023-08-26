@@ -2,7 +2,7 @@
 #include "../src/queue.h"
 #include "../src/bucket.h"
 
-TEST_CASE("Test Enqueue three item check update status correctly") {
+TEST_CASE("Test Enqueue one item check update status correctly") {
 
   SECTION("testSec") {
     Queue q{"name"};
@@ -81,10 +81,11 @@ TEST_CASE("Test for Enqueue with different sizes") {
       q.enqueue(buffer, i);
     }
     REQUIRE(q.getMetaData()->count == (numberOfItem - 1));
+    // std::memset(buffer, 0, 100);
 
     size_t itemLength = 0;
     const QueueMetaData *tempStatus = nullptr;
-    for (int i = 1; i < 100; i++) {
+    for (int i = 1; i < numberOfItem; i++) {
       q.head(buffer, &itemLength);
       buffer[itemLength] = '\0';
       REQUIRE(i == strlen(buffer));
@@ -107,6 +108,25 @@ TEST_CASE("Test bucket creation") {
     REQUIRE(stat("test/bucket/created", &st) == 0);
   }
   //   SECTION("Tear Down") { REQUIRE(remove("name") == 0); }
+}
+
+TEST_CASE("test_queue_item_check_option_working") {
+
+  SECTION("testSec") {
+    Queue q{"name"};
+    const char *test_str = "A RANDOM ITEM IN QUEUE";
+    char buffer[100] = {0};
+    size_t itemlen = 0;
+    q.enqueue(test_str, strlen(test_str) + 1);
+    QueueItem item = q.head(buffer, &itemlen);
+    REQUIRE(item.check == 0);
+    REQUIRE(q.dequeue(itemlen) == true);
+    REQUIRE(q.at(1).check == 1);
+    q.enqueue(test_str, strlen(test_str) + 1);
+    item = q.at(2);
+    REQUIRE(item.check == 0);
+  }
+  SECTION("Tear Down") { REQUIRE(remove("name") == 0); }
 }
 
 TEST_CASE("Test getting existing queue") {

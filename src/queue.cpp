@@ -1,6 +1,7 @@
 #include <cstring>
 #include <errno.h>
 #include <cstdlib>
+#include <cstddef>
 #include "queue.h"
 #include "bucket.h"
 
@@ -57,7 +58,7 @@ void Queue::enqueue(const char *buffer, size_t buffer_len) {
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
   if (this->isAvailable && (fd = fopen(validPath, "r+b"))) {
     int reds = fseek(fd, mState.tail, SEEK_SET);
-    QueueItem item = {.bytesLen = buffer_len, .index = static_cast<uint16_t>(this->mState.count + (1))};
+    QueueItem item = {.bytesLen = buffer_len, .index = static_cast<uint16_t>(this->mState.count + (1)), .check = 0};
     this->mState.tail += fwrite(&item, (sizeof(QueueItem)), 1, fd) * ((sizeof(QueueItem)));
     size_t res = fwrite(buffer, buffer_len, 1, fd);
     this->mState.tail += res * buffer_len;
@@ -68,7 +69,7 @@ void Queue::enqueue(const char *buffer, size_t buffer_len) {
   }
 }
 
-bool Queue::head(char *buffer, size_t *itemLen, bool dequeue) {
+QueueItem Queue::head(char *buffer, size_t *itemLen, bool dequeue) {
   FILE *fd = nullptr;
   QueueItem item;
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
@@ -77,38 +78,65 @@ bool Queue::head(char *buffer, size_t *itemLen, bool dequeue) {
     fread(&item, ((sizeof(QueueItem))), 1, fd);
     if (this->mState.head == this->mState.tail) {
       fclose(fd);
-      return false;
+      item.check = 2;
+      return item;
     }
     if (itemLen) {
       *itemLen = item.bytesLen;
     }
     if (!buffer) {
       fclose(fd);
-      return true;
+      return item;
     }
     fseek(fd, this->mState.head + ((sizeof(QueueItem))), SEEK_SET);
     if (fread(buffer, item.bytesLen, 1, fd) == 1) {
       fclose(fd);
       if (dequeue) {
-        this->mState.head += item.bytesLen + ((sizeof(QueueItem)));
-        ++this->mState.index;
-        updateState();
+        // setting the QueueItem.check
+        fseek(fd, this->mState.head, SEEK_SET);
+        item.check = 1;
+        if (fwrite(&item, sizeof(QueueItem), 1, fd) == 1) {
+          this->mState.head += item.bytesLen + ((sizeof(QueueItem)));
+          ++this->mState.index;
+          updateState();
+        }
       }
-      return true;
+      return item;
     } else
-      printf("failed to read one item\n");
+      printf("failed to read one item with len of: %d\n", item.bytesLen);
+    fclose(fd);
+  }
+  item.check = 2;
+  return item;
+}
+
+bool Queue::dequeue(const size_t itemLen) {
+  QueueItem item;
+  FILE *fd = nullptr;
+  char *validPath = strlen(this->path) == 0 ? this->name : this->path;
+  errno = 0;
+  if ((fd = fopen(validPath, "r+b"))) {
+    // fseek(fd, this->mState.head, SEEK_SET);
+    // if (fread(&item, ((sizeof(QueueItem))), 1, fd) == 1) {
+    item.check = 1;
+    fseek(fd, this->mState.head + offsetof(QueueItem, check), SEEK_SET);
+    if (fwrite(&item.check, sizeof(item.check), 1, fd) == 1) {
+      this->mState.head += itemLen + sizeof(QueueItem);
+      this->mState.index++;
+      updateState();
+      fclose(fd);
+      return true;
+    }
+    // }
+  }
+  printf("Failed to dequeue: cause: %s\n", strerror(errno));
+  if (fd != nullptr) {
     fclose(fd);
   }
   return false;
 }
 
-void Queue::dequeue(const size_t itemLen) {
-  this->mState.head += itemLen + sizeof(QueueItem);
-  this->mState.index++;
-  updateState();
-}
-
-bool Queue::at(uint16_t index, char *buffer, size_t *itemLen) {
+QueueItem Queue::at(uint16_t index, char *buffer, size_t *itemLen) {
   QueueItem item;
   FILE *fd = nullptr;
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
@@ -124,7 +152,7 @@ bool Queue::at(uint16_t index, char *buffer, size_t *itemLen) {
         printf("Found the Item at %d %d \n", item.index, item.bytesLen);
         fread(buffer, item.bytesLen, 1, fd);
         fclose(fd);
-        return true;
+        return item;
       }
       currentPos += item.bytesLen + ((sizeof(QueueItem)));
     }
@@ -133,7 +161,32 @@ bool Queue::at(uint16_t index, char *buffer, size_t *itemLen) {
     printf("Failed to read the queue\n");
   }
 
-  return false;
+  item.check = 2;
+  return item;
+}
+
+QueueItem Queue::at(uint16_t index) {
+  QueueItem item;
+  FILE *fd = nullptr;
+  char *validPath = strlen(this->path) == 0 ? this->name : this->path;
+  if ((fd = fopen(validPath, "rb"))) {
+    // loop to find the index
+    size_t currentPos = sizeof(QueueMetaData);
+    while (currentPos <= this->mState.tail) {
+      fseek(fd, currentPos, SEEK_SET);
+      std::memset(&item, 0, sizeof(item));
+      fread(&item, ((sizeof(QueueItem))), 1, fd);
+      if (item.index == index) {
+        return item;
+      }
+      currentPos += item.bytesLen + ((sizeof(QueueItem)));
+    }
+    fclose(fd);
+  } else {
+    printf("Failed to read the queue\n");
+    item.check = 2;
+    return item;
+  }
 }
 
 bool Queue::isEmpty() const { return this->mState.count == 0; }

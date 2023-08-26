@@ -19,6 +19,12 @@ struct QueueMetaData {
 struct QueueItem {
   size_t bytesLen;
   uint16_t index;
+  /**
+   * \details check could have three values
+   *          0: the item is uncheckd: default value
+   *          1: the item is checked: the value will be checked after its item dequeu gets dequeue
+   *          2: invalid Queue item struct, this value indicates an error
+   */
   uint8_t check;
 };
 
@@ -28,10 +34,11 @@ public:
   Queue(const char *name, const char *path = nullptr);
   ~Queue();
   void enqueue(const char *buffer, size_t buffer_len);
-  void dequeue(const size_t itemLen);
-  bool head(char *buffer, size_t *itemLen = nullptr, bool dequeue = false);
+  bool dequeue(const size_t itemLen);
+  QueueItem head(char *buffer, size_t *itemLen = nullptr, bool dequeue = false);
   void tail();
-  bool at(uint16_t index, char *buffer, size_t *itemLen = nullptr);
+  QueueItem at(uint16_t index, char *buffer, size_t *itemLen = nullptr);
+  QueueItem at(uint16_t index);
   bool isEmpty() const;
   bool rename(const char *newName, const Bucket *bucket);
   bool move(const Bucket *other);
