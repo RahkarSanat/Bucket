@@ -123,8 +123,8 @@ bool Queue::dequeue(const size_t itemLen) {
     if (fwrite(&item.check, sizeof(item.check), 1, fd) == 1) {
       this->mState.head += itemLen + sizeof(QueueItem);
       this->mState.index++;
-      updateState();
       fclose(fd);
+      updateState();
       return true;
     }
     // }
