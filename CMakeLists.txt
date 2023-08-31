@@ -9,6 +9,7 @@ set(SOURCE_FILES
     main.cpp
     src/bucket.cpp
     src/queue.cpp
+    src/circular_queue.cpp
 )
 
 # Add an executable target

@@ -3,7 +3,7 @@ SOURCE_FILES := $(wildcard $(SOURCE_DIR)/*.cpp)
 
 all:$(SOURCE_FILES)
 	[ -d build ] || mkdir build
-	@g++ main.cpp src/bucket.cpp src/queue.cpp -o build/bucket -I./src
+	@g++ main.cpp src/bucket.cpp src/queue.cpp src/circular_queue.cpp -o build/bucket -I./src
 
 run:all
 	@./build/bucket

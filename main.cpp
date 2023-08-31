@@ -3,11 +3,21 @@
 #include <cstring>
 #include "bucket.h"
 #include "queue"
-// #include "tests.h"
+#include "circular_queue.h"
 
 int main() {
-#ifdef TEST_ENABLED
-  run_tests();
+#if 1
+  CQueue obj{"first.bq", nullptr, 45};
+  uint8_t buf[40]{0};
+  buf[0] = 'd';
+  buf[25] = '1';
+  buf[38] = 'F';
+  obj.enqueue((char *)buf, sizeof(buf));
+  // obj.enqueue((char *)buf, sizeof(buf));
+
+  // std::cout << obj << std::endl;
+  // obj.printer();
+
 #else
   Queue q{"text.txt"};
   {
