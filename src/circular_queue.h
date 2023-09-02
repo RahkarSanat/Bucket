@@ -17,9 +17,10 @@ struct CQueueMetaData {
 class CQueue {
 public:
   CQueue() = default;
-  CQueue(const char *name, const char *path = nullptr, uint16_t itemSize = 100, uint16_t capacity = 10);
+  CQueue(const char *name, const char *path = nullptr);
+  CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const char *path = nullptr);
   ~CQueue();
-  bool head(char *buffer, bool dequeue = false);
+  bool head(char *buffer, uint16_t bufferLen, bool dequeue = false);
 
   bool enqueue(const char *buffer, size_t buffer_len);
   bool dequeue();

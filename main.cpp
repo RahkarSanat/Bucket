@@ -3,20 +3,23 @@
 #include <cstring>
 #include "bucket.h"
 #include "queue"
+#include <string>
 #include "circular_queue.h"
 
 int main() {
 #if 1
-  CQueue obj{"first.bq", nullptr, 45};
-  uint8_t buf[40]{0};
-  buf[0] = 'd';
-  buf[25] = '1';
-  buf[38] = 'F';
-  obj.enqueue((char *)buf, sizeof(buf));
-  // obj.enqueue((char *)buf, sizeof(buf));
+  CQueue obj{"first.bq", 45, 8};
+  uint8_t dq_buf[45]{0};
+  uint8_t buf[] = "a - bahre to dadam del o din ey sanam";
 
-  // std::cout << obj << std::endl;
-  // obj.printer();
+  for (int i = 0; i < 10; i++) {
+    buf[0] = (char)(i + 48);
+    obj.enqueue((char *)buf, sizeof(buf));
+  }
+
+  for (int i = 0; i < 10; i++)
+    if (obj.head((char *)dq_buf, sizeof(dq_buf), true))
+      printf("%s\n", dq_buf);
 
 #else
   Queue q{"text.txt"};
