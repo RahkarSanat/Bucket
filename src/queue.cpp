@@ -177,6 +177,7 @@ QueueItem Queue::at(uint16_t index) {
       std::memset(&item, 0, sizeof(item));
       fread(&item, ((sizeof(QueueItem))), 1, fd);
       if (item.index == index) {
+        fclose(fd);
         return item;
       }
       currentPos += item.bytesLen + ((sizeof(QueueItem)));
