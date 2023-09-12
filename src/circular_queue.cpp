@@ -112,7 +112,6 @@ void CQueue::updateState() {
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
 
   if ((fd = fopen(validPath, "r+b"))) {
-    printf("the mstate tail is %d %d\n", mState.tail, mState.head);
     fseek(fd, 0, SEEK_SET);
     fwrite(&this->mState, sizeof(CQueueMetaData), 1, fd);
     fclose(fd);
@@ -146,7 +145,7 @@ bool CQueue::head(char *buffer, uint16_t bufferLen, bool dequeue) {
     if (dequeue) {
       printf("::::::::::::::::::\n");
       if (this->mState.head == this->mState.tail) {
-        this->mState.head = this->mState.head = -1;
+        this->mState.head = this->mState.tail = -1;
       } else {
         this->mState.head = (this->mState.head + 1) % this->mState.capacity;
       }
@@ -167,7 +166,7 @@ bool CQueue::dequeue() {
   if (this->isAvailable && (fd = fopen(validPath, "rb"))) {
     // if (dequeue) {
     if (this->mState.head == this->mState.tail) {
-      this->mState.head = this->mState.head = -1;
+      this->mState.head = this->mState.tail = -1;
     } else {
       this->mState.head = (this->mState.head + 1) % this->mState.capacity;
     }
