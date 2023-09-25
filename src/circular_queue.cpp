@@ -1,14 +1,16 @@
-#include <iostream>
+#include <inttypes.h>
 #include <circular_queue.h>
 #include <string.h>
 
 CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const char *path) {
   FILE *fd = nullptr;
   strcpy(this->name, name);
+
   if (path != nullptr)
     strcpy(this->path, path);
   char *validName = path == nullptr ? this->name : this->path;
   struct stat st;
+
   if (stat(validName, &st) == 0) {
     printf("your same circular queue existed!\n");
     if ((fd = fopen(validName, "rb"))) {
@@ -20,6 +22,7 @@ CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const cha
       }
     }
   } else if (itemSize != 0 && capacity != 0) {
+    errno = 0;
     if ((fd = fopen(validName, "wb"))) {
       this->mState = (CQueueMetaData){// todo prevent updating itemSize
                                       .head = -1,
@@ -27,7 +30,7 @@ CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const cha
                                       .itemSize = itemSize,
                                       .capacity = capacity};
       if (fwrite(&mState, sizeof(CQueueMetaData), 1, fd) == 1) {
-        isAvailable = true;
+        this->isAvailable = true;
       }
     }
   } else {
@@ -108,7 +111,7 @@ bool CQueue::enqueue(const char *buffer, size_t buffer_len) {
 }
 
 void CQueue::updateState() {
-  FILE *fd;
+  FILE *fd = nullptr;
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
 
   if ((fd = fopen(validPath, "r+b"))) {
@@ -143,7 +146,7 @@ bool CQueue::head(char *buffer, uint16_t bufferLen, bool dequeue) {
     fread(buffer, this->mState.itemSize, 1, fd);
     fclose(fd);
     if (dequeue) {
-      printf("::::::::::::::::::\n");
+      printf(":::::::::::::::::: %" PRIu32 " \n", this->mState.head);
       if (this->mState.head == this->mState.tail) {
         this->mState.head = this->mState.tail = -1;
       } else {
@@ -170,8 +173,8 @@ bool CQueue::dequeue() {
     } else {
       this->mState.head = (this->mState.head + 1) % this->mState.capacity;
     }
+    fclose(fd);
     updateState(); // must be called
-    // }
     return true;
   }
   return false;
