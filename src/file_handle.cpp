@@ -4,7 +4,7 @@ FileHandle::FileHandle(const char *name, const char *mode) { this->mFile = fopen
 FileHandle::FileHandle(FILE *file) { this->mFile = file; }
 FileHandle::~FileHandle() {
   if (this->mFile != nullptr) {
-    printf("closing the file handle!\n");
+    // printf("closing the file handle!\n");
     fclose(this->mFile);
   }
 }
