@@ -8,16 +8,16 @@
 
 int main() {
 #if 1
-  CQueue obj{"first.bq", 45, 8};
+  CQueue obj{"first.bq", 40, 10};
   uint8_t dq_buf[45]{0};
-  uint8_t buf[] = "a - bahre to dadam del o din ey sanam";
+  uint8_t buf[] = "b - bahre to dadam del o din ey sanam";
 
-  for (int i = 0; i < 10; i++) {
-    buf[0] = (char)(i + 48);
+  for (int i = 0; i < 1; i++) {
+    // buf[0] = (char)((i + 48) % 9);
     obj.enqueue((char *)buf, sizeof(buf));
   }
 
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < 1; i++)
     if (obj.head((char *)dq_buf, sizeof(dq_buf), true))
       printf("%s\n", dq_buf);
 
