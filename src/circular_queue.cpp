@@ -170,7 +170,7 @@ bool CQueue::dequeue() {
     } else {
       this->mState.head = (this->mState.head + 1) % this->mState.capacity;
     }
-    fclose(fd);
+    // fclose(fd);
     updateState(); // must be called
     return true;
   }
