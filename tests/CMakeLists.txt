@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(BUCKET_SRC
     ${CMAKE_SOURCE_DIR}/../src/bucket.cpp
     ${CMAKE_SOURCE_DIR}/../src/queue.cpp
+    ${CMAKE_SOURCE_DIR}/../src/file_handle.cpp
 )
 
 # Locate Catch2 package

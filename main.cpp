@@ -12,14 +12,30 @@ int main() {
   uint8_t dq_buf[45]{0};
   uint8_t buf[] = "b - bahre to dadam del o din ey sanam";
 
-  for (int i = 0; i < 1; i++) {
-    // buf[0] = (char)((i + 48) % 9);
+  for (int i = 0; i < 12; i++) {
+    buf[0] = (char)((i + 48));
     obj.enqueue((char *)buf, sizeof(buf));
   }
 
-  for (int i = 0; i < 1; i++)
-    if (obj.head((char *)dq_buf, sizeof(dq_buf), true))
+  char test[3][40];
+  printf("--------------------------------------\n");
+
+  for (int i = 0; i < 3; i++)
+    if (obj.head((char *)test[i], sizeof(test[i]), true)) {
+      // strcpy(test[i], (char *)dq_buf);
+      printf("%s\n", test[i]);
+    }
+  printf("--------------------------------------\n");
+
+  for (int i = 0; i < 3; i++) {
+    obj.enqueue(test[i], strlen(test[i]));
+  }
+  printf("--------------------------------------11\n");
+  for (int i = 0; i < 10; i++)
+    if (obj.head((char *)dq_buf, sizeof(dq_buf), true)) {
+      // strcpy(dq_buf, (char *)dq_buf);
       printf("%s\n", dq_buf);
+    }
 
 #else
   Queue q{"text.txt"};

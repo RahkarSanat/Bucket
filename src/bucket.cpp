@@ -1,35 +1,32 @@
-#include "bucket.h"
 #include <cstring>
 #include <errno.h>
 #include <cstdlib>
+#include <memory>
+#include "bucket.h"
 
 int Bucket::mkdirp(const char *path, mode_t mode) {
   char *p = NULL;
-  char *tmp = strdup(path);
-  int len = strlen(tmp);
+  // char *tmp = ;
+  std::unique_ptr<char> tmp = std::unique_ptr<char>{strdup(path)};
+  int len = strlen(tmp.get());
   // Iterate over each component of the path
-  for (p = tmp + 1; *p; p++) {
+  for (p = tmp.get() + 1; *p; p++) {
     if (*p == '/') {
       *p = '\0';
 
       // Create the directory if it doesn't exist
-      if (mkdir(tmp, mode) == -1 && errno != EEXIST) {
+      if (mkdir(tmp.get(), mode) == -1 && errno != EEXIST) {
         printf("::::::::::::::::::::::%s\n", strerror(errno));
-        free(tmp);
         return -1;
       }
-
       *p = '/';
     }
   }
-
   // Create the final directory
-  if (mkdir(tmp, mode) == -1 && errno != EEXIST) {
-    free(tmp);
+  if (mkdir(tmp.get(), mode) == -1 && errno != EEXIST) {
     return -1;
   }
 
-  free(tmp);
   return 0;
 }
 

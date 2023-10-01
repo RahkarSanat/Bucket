@@ -8,6 +8,7 @@ public:
   FileHandle(FILE *file);
   ~FileHandle() noexcept;
   FILE *getFile();
+  bool explicitClose();
 
 private:
   FILE *mFile;

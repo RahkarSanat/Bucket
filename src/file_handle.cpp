@@ -10,3 +10,12 @@ FileHandle::~FileHandle() {
 }
 
 FILE *FileHandle::getFile() { return this->mFile; }
+
+bool FileHandle::explicitClose() {
+  if (this->mFile != nullptr) {
+    int temp_ret = fclose(this->mFile);
+    this->mFile = nullptr;
+    return temp_ret == 0;
+  }
+  return false;
+}
