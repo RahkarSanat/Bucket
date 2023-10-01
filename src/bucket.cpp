@@ -6,8 +6,9 @@
 
 int Bucket::mkdirp(const char *path, mode_t mode) {
   char *p = NULL;
-  // char *tmp = ;
-  std::unique_ptr<char> tmp = std::unique_ptr<char>{strdup(path)};
+  using DeleterT = void (*)(void *);
+  std::unique_ptr<char, DeleterT> tmp = std::unique_ptr<char, DeleterT>{strdup(path), [](void *ptr) { free(ptr); }};
+
   int len = strlen(tmp.get());
   // Iterate over each component of the path
   for (p = tmp.get() + 1; *p; p++) {
