@@ -16,7 +16,7 @@ CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const cha
   if (stat(validName, &st) == 0) {
     FileHandle file{validName, "rb"};
     fd = file.getFile();
-    printf("your same circular queue existed!\n");
+    printf("%s circular queue existed! \n", validName);
     if (fd) {
       fseek(fd, 0L, SEEK_SET); // at the file begining
       if (fread(&this->mState, sizeof(CQueueMetaData), 1, fd) == 1) {
@@ -121,6 +121,7 @@ void CQueue::updateState() {
 
 bool CQueue::head(char *buffer, uint16_t bufferLen, bool dequeue) {
   FILE *fd = nullptr;
+  errno = 0;
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
   if (buffer == nullptr) {
     printf("buffer is empty\n");
@@ -132,13 +133,12 @@ bool CQueue::head(char *buffer, uint16_t bufferLen, bool dequeue) {
   }
 
   if (this->mState.head == -1) {
-    // printf("the circular queue is empty\n");
+    printf("the circular queue is empty %d %" PRIi32 "\n", this->mState.itemSize, this->mState.tail);
     return false;
   }
   FileHandle file{validPath, "rb"};
   fd = file.getFile();
   if (this->isAvailable && fd) {
-
     fseek(fd, this->mState.head * this->mState.itemSize + sizeof(CQueueMetaData), SEEK_SET);
     fread(buffer, this->mState.itemSize, 1, fd);
     if (dequeue) {
@@ -176,6 +176,8 @@ bool CQueue::dequeue() {
   }
   return false;
 }
+
+CQueueMetaData CQueue::getState() const { return this->mState; }
 
 // void CQueue::printer() {
 //   for (int i = 0; i < CIRCULAR_QUEUE_CAPACITY; i++)
