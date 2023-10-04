@@ -26,6 +26,7 @@ public:
   bool dequeue();
   //   friend std::ostream &operator<<(std::ostream &stream, CQueue &queue);
   //   void printer();
+  CQueueMetaData getState() const;
 
 private:
   //   uint8_t capacity;
