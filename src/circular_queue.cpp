@@ -3,6 +3,7 @@
 #include <string.h>
 #include "circular_queue.h"
 #include "file_handle.h"
+#include "esp_log.h"
 
 CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const char *path) {
   FILE *fd = nullptr;
@@ -17,12 +18,17 @@ CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const cha
     FileHandle file{validName, "rb"};
     fd = file.getFile();
     printf("%s circular queue existed! \n", validName);
+    errno = 0;
     if (fd) {
       fseek(fd, 0L, SEEK_SET); // at the file begining
       if (fread(&this->mState, sizeof(CQueueMetaData), 1, fd) == 1) {
         if (this->mState.capacity != capacity || this->mState.itemSize != itemSize)
           printf("Warning: Queue exsited with different itemSize and/or capacity\n");
+        printf(":::::::::::::::::::::::::::::::::::::%" PRIi32 " %" PRIi32 " %" PRIu16 "%" PRIu16 "\n", mState.head, mState.tail,
+               mState.itemSize, mState.capacity);
         isAvailable = true;
+      } else {
+        printf("::::::::::::::::::::::::::::::::::::: %s\n", strerror(errno));
       }
     }
   } else if (itemSize != 0 && capacity != 0) {
@@ -98,6 +104,7 @@ bool CQueue::enqueue(const char *buffer, size_t buffer_len) {
       char wasted = 0;
       int ddd = 0;
       if ((ddd = fwrite(&wasted, 1, this->mState.itemSize - buffer_len - 1, fd)) == this->mState.itemSize - buffer_len - 1) {
+        file.explicitClose();
         this->updateState();
         return true;
       }
@@ -112,6 +119,7 @@ void CQueue::updateState() {
   FILE *fd = file.getFile();
 
   if (fd) {
+    printf("HERE %s %" PRIi32 " %" PRIi32 "\n", validPath, this->mState.tail, this->mState.head);
     fseek(fd, 0, SEEK_SET);
     fwrite(&this->mState, sizeof(CQueueMetaData), 1, fd);
   } else {
