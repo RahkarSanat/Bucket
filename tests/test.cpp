@@ -1,5 +1,6 @@
 #include <catch2/catch_all.hpp>
 #include "../src/queue.h"
+#include "../src/circular_queue.h"
 #include "../src/bucket.h"
 
 TEST_CASE("Test Enqueue one item check update status correctly") {
@@ -140,3 +141,47 @@ TEST_CASE("Test getting existing queue") {
     REQUIRE(bucket.getExistingQueue("14", &temp) == false);
   }
 }
+
+TEST_CASE("Test Persistant circular queue state") {
+
+  int number = 40;
+  SECTION("testSec") {
+    {
+      CQueue q{"test1.cq", 100, 100};
+      const char *item = "Test to See if CQueue is persisited";
+      for (int i = 0; i < number; i++)
+        q.enqueue(item, strlen(item));
+      CQueueMetaData meta = q.getState();
+    }
+    {
+      CQueue q{"test1.cq", 100, 100};
+      CQueueMetaData meta = q.getState();
+      printf("data is %d %d %d %d", meta.head, meta.tail, meta.capacity, meta.itemSize);
+
+      REQUIRE(meta.head == 0);
+      REQUIRE(meta.tail == number - 1);
+    }
+    SECTION("Tear Down") { REQUIRE(remove("test1.cq") == 0); }
+  }
+}
+
+// TEST_CASE("test_") {
+
+//   int number = 40;
+//   SECTION("testSec") {
+//     {
+//       CQueue q{"test1.cq", 100, 100};
+//       const char *item = "Test to See if CQueue is persisited";
+//       for (int i = 0; i < number; i++)
+//         q.enqueue(item, strlen(item));
+//       CQueueMetaData meta = q.getState();
+//     }
+//     {
+//       CQueue q{"test1.cq", 100, 100};
+//       CQueueMetaData meta = q.getState();
+//       REQUIRE(meta.head == 0);
+//       REQUIRE(meta.tail == number - 1);
+//     }
+//     SECTION("Tear Down") { REQUIRE(remove("test1.cq") == 0); }
+//   }
+// }

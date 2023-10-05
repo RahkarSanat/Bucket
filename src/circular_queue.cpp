@@ -1,5 +1,5 @@
 #include <inttypes.h>
-#include <circular_queue.h>
+#include "circular_queue.h"
 #include <string.h>
 #include "circular_queue.h"
 #include "file_handle.h"
@@ -177,7 +177,10 @@ bool CQueue::dequeue() {
   return false;
 }
 
-CQueueMetaData CQueue::getState() const { return this->mState; }
+CQueueMetaData CQueue::getState() const {
+  // printf("Here2: %d %d %d %d\n", mState.capacity, mState.head, mState.itemSize, mState.tail);
+  return this->mState;
+}
 
 // void CQueue::printer() {
 //   for (int i = 0; i < CIRCULAR_QUEUE_CAPACITY; i++)
