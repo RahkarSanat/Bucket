@@ -36,7 +36,7 @@ private:
   char path[2 * QUEUE_NAME_MAX_LENGTH] = {0};
   CQueueMetaData mState;
   bool isAvailable = false;
-  void updateState();
+  void updateState(FILE *f = nullptr);
 };
 
 #endif // CIRCULAR_QUEUE_H

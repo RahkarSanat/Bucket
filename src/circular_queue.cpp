@@ -3,7 +3,6 @@
 #include <string.h>
 #include "circular_queue.h"
 #include "file_handle.h"
-#include "esp_log.h"
 
 CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const char *path) {
   FILE *fd = nullptr;
@@ -113,7 +112,7 @@ bool CQueue::enqueue(const char *buffer, size_t buffer_len) {
   return false;
 }
 
-void CQueue::updateState() {
+void CQueue::updateState(FILE *f) {
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
   FileHandle file{validPath, "r+b"};
   FILE *fd = file.getFile();
