@@ -23,11 +23,7 @@ CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const cha
       if (fread(&this->mState, sizeof(CQueueMetaData), 1, fd) == 1) {
         if (this->mState.capacity != capacity || this->mState.itemSize != itemSize)
           printf("Warning: Queue exsited with different itemSize and/or capacity\n");
-        printf(":::::::::::::::::::::::::::::::::::::%" PRIi32 " %" PRIi32 " %" PRIu16 "%" PRIu16 "\n", mState.head, mState.tail,
-               mState.itemSize, mState.capacity);
         isAvailable = true;
-      } else {
-        printf("::::::::::::::::::::::::::::::::::::: %s\n", strerror(errno));
       }
     }
   } else if (itemSize != 0 && capacity != 0) {

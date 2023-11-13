@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <cstdlib>
 #include <memory>
+#include <stdlib.h>
 #include "bucket.h"
 
 int Bucket::mkdirp(const char *path, mode_t mode) {
@@ -17,7 +18,6 @@ int Bucket::mkdirp(const char *path, mode_t mode) {
 
       // Create the directory if it doesn't exist
       if (mkdir(tmp.get(), mode) == -1 && errno != EEXIST) {
-        printf("::::::::::::::::::::::%s\n", strerror(errno));
         return -1;
       }
       *p = '/';
@@ -68,3 +68,53 @@ bool Bucket::removeQueue(const char *name) {
   return false;
 }
 const char *Bucket::getPath() const { return this->mBucketPath; }
+
+void Bucket::list() const {
+  char *entry = nullptr;
+  bucket::Iterator iter{this->getPath()};
+  printf("listing bucket in: %s :------>\n", this->getPath());
+  while ((entry = iter.next())) {
+    printf("- %s \n", entry);
+  }
+}
+
+namespace bucket {
+
+Iterator::Iterator(const char *dir_name) {
+  if (dir_name != nullptr)
+    memcpy(mDirectoryName, dir_name, strlen(dir_name) + 1);
+  dir = opendir(mDirectoryName);
+  if (dir == NULL) {
+    printf("Unable to open directory\n");
+  }
+}
+
+void Iterator::from(uint32_t from) {
+  char *entry_name = nullptr;
+  char queueName[15] = {0};
+  sprintf(queueName, "%08" PRIx32, from);
+  while ((entry_name = this->next())) {
+    if (strcmp(entry_name, queueName) == 0) {
+      long location = telldir(dir);
+      if (location > 0)
+        seekdir(dir, location - 1);
+      return;
+    }
+  }
+  printf("Didn't find the entry you wanted to iterate from it\n");
+}
+
+char *Iterator::next() {
+  if (!dir) {
+    printf("Directory is not open\n");
+    return nullptr;
+  }
+  entry = readdir(this->dir);
+  if (entry != nullptr)
+    return entry->d_name;
+  return nullptr;
+}
+
+Iterator::~Iterator() { closedir(dir); }
+
+} // namespace bucket
