@@ -81,10 +81,11 @@ void Bucket::list() const {
 namespace bucket {
 
 Iterator::Iterator(const char *dir_name) {
-  if (dir_name != nullptr)
+  if (dir_name != nullptr) {
     memcpy(mDirectoryName, dir_name, strlen(dir_name) + 1);
+  }
   dir = opendir(mDirectoryName);
-  if (dir == NULL) {
+  if (dir == nullptr) {
     printf("Unable to open directory\n");
   }
 }
@@ -110,11 +111,16 @@ char *Iterator::next() {
     return nullptr;
   }
   entry = readdir(this->dir);
-  if (entry != nullptr)
+  if (entry != nullptr) {
     return entry->d_name;
+  }
   return nullptr;
 }
 
-Iterator::~Iterator() { closedir(dir); }
+Iterator::~Iterator() {
+  if (dir) {
+    closedir(dir);
+  }
+}
 
 } // namespace bucket
