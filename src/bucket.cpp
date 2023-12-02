@@ -69,8 +69,9 @@ bool Bucket::removeQueue(const char *name) {
 }
 const char *Bucket::getPath() const { return this->mBucketPath; }
 
-void Bucket::list() const {
+void Bucket::list(bool showSize) const {
   char *entry = nullptr;
+  struct stat st;
   bucket::Iterator iter{this->getPath()};
   printf("listing bucket in: %s :------>\n", this->getPath());
   while ((entry = iter.next())) {

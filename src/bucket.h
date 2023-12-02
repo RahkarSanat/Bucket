@@ -20,7 +20,7 @@ public:
   bool getExistingQueue(const char *name, Queue *queue);
   const char *getPath() const;
   bool removeQueue(const char *name);
-  void list() const;
+  void list(bool showSize = false) const;
 
 private:
   int mkdirp(const char *path, mode_t mode);
