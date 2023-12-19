@@ -8,8 +8,9 @@ CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const cha
   FILE *fd = nullptr;
   strcpy(this->name, name);
 
-  if (path != nullptr)
+  if (path != nullptr) {
     strcpy(this->path, path);
+  }
   char *validName = path == nullptr ? this->name : this->path;
   struct stat st;
 
