@@ -17,25 +17,33 @@ int main() {
     obj.enqueue((char *)buf, sizeof(buf));
   }
 
-  char test[3][40];
-  printf("--------------------------------------\n");
+  obj.printer();
 
-  for (int i = 0; i < 3; i++)
+  char test[3][40];
+  // printf("--------------------------------------\n");
+  PRINT("-------------------------------------- %s\n", "working or not");
+
+  for (int i = 0; i < 3; i++) {
     if (obj.head((char *)test[i], sizeof(test[i]), true)) {
       // strcpy(test[i], (char *)dq_buf);
-      printf("%s\n", test[i]);
+      PRINT("%s\n", test[i]);
     }
-  printf("--------------------------------------\n");
+  }
+  PRINT("--------------------------------------\n");
 
   for (int i = 0; i < 3; i++) {
     obj.enqueue(test[i], strlen(test[i]));
   }
-  printf("--------------------------------------11\n");
-  for (int i = 0; i < 10; i++)
+  PRINT("--------------------------------------11\n");
+  obj.printer();
+  PRINT("--------------------------------------11\n");
+  for (int i = 0; i < 5; i++)
     if (obj.head((char *)dq_buf, sizeof(dq_buf), true)) {
       // strcpy(dq_buf, (char *)dq_buf);
-      printf("%s\n", dq_buf);
+      PRINT("%s\n", dq_buf);
     }
+  PRINT("--------------------------------------11\n");
+  obj.printer();
 
 #else
   Queue q{"text.txt"};

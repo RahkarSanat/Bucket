@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <ostream>
+#include <array>
 #include "queue.h"
 
 #define CIRCULAR_QUEUE_CAPACITY 6
@@ -24,19 +25,15 @@ public:
 
   bool enqueue(const char *buffer, size_t buffer_len);
   bool dequeue();
-  //   friend std::ostream &operator<<(std::ostream &stream, CQueue &queue);
-  //   void printer();
+  void printer();
   CQueueMetaData getState() const;
 
 private:
-  //   uint8_t capacity;
-  //   uint8_t queue[CIRCULAR_QUEUE_CAPACITY]{0};
-  //   int16_t head, tail;
   char name[QUEUE_NAME_MAX_LENGTH] = {0};
   char path[2 * QUEUE_NAME_MAX_LENGTH] = {0};
   CQueueMetaData mState;
   bool isAvailable = false;
-  void updateState(FILE *f = nullptr);
+  void updateState();
 };
 
 #endif // CIRCULAR_QUEUE_H

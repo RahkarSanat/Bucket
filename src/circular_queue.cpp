@@ -6,32 +6,33 @@
 
 CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const char *path) {
   FILE *fd = nullptr;
-  strcpy(this->name, name);
+  strcpy(static_cast<char *>(this->name), name);
 
   if (path != nullptr) {
-    strcpy(this->path, path);
+    strcpy(static_cast<char *>(this->path), path);
   }
-  char *validName = path == nullptr ? this->name : this->path;
-  struct stat st;
+  char *validName = path == nullptr ? static_cast<char *>(this->name) : static_cast<char *>(this->path);
+  struct stat st {};
 
   if (stat(validName, &st) == 0) {
     FileHandle file{validName, "rb"};
     fd = file.getFile();
-    printf("%s circular queue existed! \n", validName);
+    PRINT("%s circular queue existed! \n", validName);
     errno = 0;
-    if (fd) {
+    if (fd != nullptr) {
       fseek(fd, 0L, SEEK_SET); // at the file begining
       if (fread(&this->mState, sizeof(CQueueMetaData), 1, fd) == 1) {
-        if (this->mState.capacity != capacity || this->mState.itemSize != itemSize)
-          printf("Warning: Queue exsited with different itemSize and/or capacity\n");
+        if (this->mState.capacity != capacity || this->mState.itemSize != itemSize) {
+          PRINT("Warning: Queue exsited with different itemSize and/or capacity\n");
+        }
         isAvailable = true;
       }
     }
   } else if (itemSize != 0 && capacity != 0) {
     FileHandle file{validName, "wb"};
     fd = file.getFile();
-    if (fd) {
-      this->mState = (CQueueMetaData){// todo prevent updating itemSize
+    if (fd != nullptr) {
+      this->mState = (CQueueMetaData){// TODO prevent updating itemSize
                                       .head = -1,
                                       .tail = -1,
                                       .itemSize = itemSize,
@@ -42,30 +43,31 @@ CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const cha
     }
   } else {
     this->isAvailable = false;
-    printf("Error: Invalid size for item and capacity\n");
+    PRINT("Error: Invalid size for item and capacity\n");
     return;
   }
 }
 
 CQueue::CQueue(const char *name, const char *path) {
   FILE *fd = nullptr;
-  strcpy(this->name, name);
-  if (path != nullptr)
-    strcpy(this->path, path);
-  char *validName = path == nullptr ? this->name : this->path;
-  struct stat st;
+  strcpy(static_cast<char *>(this->name), name);
+  if (path != nullptr) {
+    strcpy(static_cast<char *>(this->path), path);
+  }
+  char *validName = path == nullptr ? static_cast<char *>(this->name) : static_cast<char *>(this->path);
+  struct stat st {};
   if (stat(validName, &st) == 0) {
-    printf("your same circular queue existed!\n");
+    PRINT("your same circular queue existed!\n");
     FileHandle file{validName, "rb"};
     fd = file.getFile();
-    if (fd) {
+    if (fd != nullptr) {
       fseek(fd, 0L, SEEK_SET); // at the file begining
       if (fread(&this->mState, sizeof(CQueueMetaData), 1, fd) == 1) {
         isAvailable = true;
       }
     }
   } else {
-    printf("Error: No such Circular Queue\n");
+    PRINT("Error: No such Circular Queue\n");
     return;
   }
 }
@@ -77,12 +79,11 @@ bool CQueue::enqueue(const char *buffer, size_t buffer_len) {
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
 
   if (buffer_len > this->mState.itemSize) {
-    printf("Error: buffer is larger than CQueue ItemSize\n");
+    PRINT("Error: buffer is larger than CQueue ItemSize\n");
     return false;
   }
 
   if ((this->mState.tail + 1) % this->mState.capacity == this->mState.head) {
-    uint8_t data;
     this->dequeue();
   }
 
@@ -93,7 +94,7 @@ bool CQueue::enqueue(const char *buffer, size_t buffer_len) {
   }
   FileHandle file{validPath, "r+b"};
   fd = file.getFile();
-  if (this->isAvailable && fd) {
+  if (this->isAvailable && fd != nullptr) {
     int reds = fseek(fd, (this->mState.tail * this->mState.itemSize) + sizeof(CQueueMetaData), SEEK_SET);
     size_t res = fwrite(buffer, buffer_len, 1, fd);
     if (buffer_len < this->mState.itemSize && res == 1) {
@@ -109,17 +110,16 @@ bool CQueue::enqueue(const char *buffer, size_t buffer_len) {
   return false;
 }
 
-void CQueue::updateState(FILE *f) {
+void CQueue::updateState() {
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
   FileHandle file{validPath, "r+b"};
   FILE *fd = file.getFile();
 
-  if (fd) {
-    printf("HERE %s %" PRIi32 " %" PRIi32 "\n", validPath, this->mState.tail, this->mState.head);
+  if (fd != nullptr) {
     fseek(fd, 0, SEEK_SET);
     fwrite(&this->mState, sizeof(CQueueMetaData), 1, fd);
   } else {
-    printf("Failed to update the queue status\n");
+    PRINT("Failed to update the queue status\n");
   }
 }
 
@@ -128,21 +128,22 @@ bool CQueue::head(char *buffer, uint16_t bufferLen, bool dequeue) {
   errno = 0;
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
   if (buffer == nullptr) {
-    printf("buffer is empty\n");
+    PRINT("buffer is empty\n");
     return false;
   }
   if (bufferLen < this->mState.itemSize) {
-    printf("Error: buffer len is smaller than CQueue itemsize\n");
+    PRINT("Error: buffer len is smaller than CQueue itemsize\n");
     return false;
   }
 
   if (this->mState.head == -1) {
-    printf("the circular queue is empty %d %" PRIi32 "\n", this->mState.itemSize, this->mState.tail);
+    PRINT("the circular queue is empty %d %" PRIi32 "\n", this->mState.itemSize, this->mState.tail);
     return false;
   }
+
   FileHandle file{validPath, "rb"};
   fd = file.getFile();
-  if (this->isAvailable && fd) {
+  if (this->isAvailable && fd != nullptr) {
     fseek(fd, this->mState.head * this->mState.itemSize + sizeof(CQueueMetaData), SEEK_SET);
     fread(buffer, this->mState.itemSize, 1, fd);
     if (dequeue) {
@@ -162,12 +163,12 @@ bool CQueue::dequeue() {
   FILE *fd = nullptr;
   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
   if (this->mState.head == -1) {
-    printf("the circular queue is empty, nothing to dequeue\n");
+    PRINT("the circular queue is empty, nothing to dequeue\n");
     return false;
   }
   FileHandle file{validPath, "rb"};
   fd = file.getFile();
-  if (this->isAvailable && fd) {
+  if (this->isAvailable && fd != nullptr) {
     // if (dequeue) {
     if (this->mState.head == this->mState.tail) {
       this->mState.head = this->mState.tail = -1;
@@ -181,13 +182,32 @@ bool CQueue::dequeue() {
   return false;
 }
 
-CQueueMetaData CQueue::getState() const {
-  // printf("Here2: %d %d %d %d\n", mState.capacity, mState.head, mState.itemSize, mState.tail);
-  return this->mState;
-}
+CQueueMetaData CQueue::getState() const { return this->mState; }
 
-// void CQueue::printer() {
-//   for (int i = 0; i < CIRCULAR_QUEUE_CAPACITY; i++)
-//     std::cout << (int)this->queue[i] << " ,";
-//   std::cout << std::endl;
-// }
+void CQueue::printer() {
+  FILE *fd = nullptr;
+  errno = 0;
+  char *validPath = strlen(this->path) == 0 ? this->name : this->path;
+  FileHandle file{validPath, "rb"};
+  fd = file.getFile();
+  PRINT("asdfasdfasdfasfdasdfasfdsadfasf %d %d %p\n", this->mState.head, this->isAvailable, fd);
+  // head == -1 means queue is empty
+  if (this->mState.head == -1) {
+    PRINT("the circular queue is empty %d %" PRIi32 "\n", this->mState.itemSize, this->mState.tail);
+  }
+
+  if (this->isAvailable && fd != nullptr) {
+    auto state = this->getState();
+    char buffer[state.itemSize]{0};
+    while (state.head != -1 || state.tail != -1) {
+      fseek(fd, state.head * state.itemSize + sizeof(CQueueMetaData), SEEK_SET);
+      fread(static_cast<char *>(buffer), state.itemSize, 1, fd);
+      PRINT("%d %s\n", state.head, buffer);
+      if (state.head == state.tail) {
+        state.head = state.tail = -1;
+      } else {
+        state.head = (state.head + 1) % state.capacity;
+      }
+    }
+  }
+}

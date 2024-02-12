@@ -55,4 +55,10 @@ private:
   void updateState();
 }; //
 
+#ifdef __linux__
+template <typename... Args> void PRINT(Args... args) { printf(args...); }
+#else
+template <typename... Args> void PRINT(Args... args) { ESP_LOGI(args...); }
+#endif
+
 #endif // RS_BUCKET_QUEUE_H
