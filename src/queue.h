@@ -63,10 +63,11 @@ private:
   void updateState();
 }; //
 
-#ifdef __linux__
+// #ifdef __linux__
 template <typename... Args> void PRINT(Args... args) { printf(args...); }
-#else
-template <typename... Args> void PRINT(Args... args) { ESP_LOGI(args...); }
-#endif
+// #else
+// #include "esp_log.h"
+// template <typename... Args> void PRINT(Args... args) { ESP_LOGI("tag", args...); }
+// #endif
 
 #endif // RS_BUCKET_QUEUE_H
