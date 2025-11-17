@@ -21,6 +21,10 @@ public:
   const char *getPath() const;
   bool removeQueue(const char *name);
   void list(bool showSize = false) const;
+  /*
+   * brief get the total size of files in bucket, nested directories are not included
+   */
+  size_t getDirSize() const;
 
 private:
   int mkdirp(const char *path, mode_t mode);
@@ -32,7 +36,7 @@ class Iterator {
 public:
   Iterator(const char *dir_name);
   ~Iterator();
-  virtual void from(uint32_t from);
+  virtual bool from(uint32_t from);
   char *next();
 
 private:

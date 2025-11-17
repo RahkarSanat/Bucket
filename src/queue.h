@@ -34,7 +34,7 @@ public:
   Queue(const char *name, const char *path = nullptr);
   ~Queue();
   void enqueue(const char *buffer, size_t buffer_len);
-  bool dequeue(const size_t itemLen);
+  bool dequeue(size_t itemLen);
   QueueItem head(char *buffer, size_t *itemLen = nullptr, bool dequeue = false);
   void tail();
   QueueItem at(uint16_t index, char *buffer, size_t *itemLen = nullptr);
@@ -58,7 +58,7 @@ public:
 private:
   char name[QUEUE_NAME_MAX_LENGTH] = {0};
   char path[2 * QUEUE_NAME_MAX_LENGTH] = {0};
-  QueueMetaData mState;
+  QueueMetaData mState = {};
   bool isAvailable = false;
   void updateState();
 }; //
