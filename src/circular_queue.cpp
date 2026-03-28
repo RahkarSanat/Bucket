@@ -130,7 +130,7 @@ bool CQueue::dequeue() {
 CQueueMetaData CQueue::getState() const { return this->mState; }
 
 const char *CQueue::resolvePath() const {
-  const char *valid = (path != nullptr && strlen(path) > 0) ? path : name;
+  const char *valid = (strlen(path) > 0) ? path : name;
   if (valid == nullptr || strlen(valid) == 0) {
     PRINT("Error: no valid file path available!\n");
     return nullptr;
