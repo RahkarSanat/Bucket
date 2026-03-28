@@ -74,20 +74,33 @@ CQueue::CQueue(const char *name, const char *path) {
 
 CQueue::~CQueue() {}
 
-void CQueue::updateState() {
+// TODO return operation result status as bool
+bool CQueue::updateState() {
   const char *valid_path = resolvePath();
   if (valid_path == nullptr) {
-    return;
+    return false;
   }
   FileHandle file{valid_path, "r+b"};
   FILE *fd = file.getFile();
 
-  if (fd != nullptr) {
-    fseek(fd, 0, SEEK_SET);
-    fwrite(&this->mState, sizeof(CQueueMetaData), 1, fd);
-  } else {
-    PRINT("Failed to update the queue status\n");
+  if (fd == nullptr) {
+    PRINT("Failed to open file for updateState\n");
+    return false;
   }
+  if (fseek(fd, 0, SEEK_SET) != 0) {
+    PRINT("Error: fseek failed in updateState errno=%d\n", errno);
+    return false;
+  }
+  if (fwrite(&this->mState, sizeof(CQueueMetaData), 1, fd) != 1) {
+    PRINT("Error: fwrite failed in updateState errno=%d\n", errno);
+    return false;
+  }
+  if (fflush(fd) != 0) {
+    PRINT("Error: fflush failed in updateState errno=%d\n", errno);
+    return false;
+  }
+
+  return false;
 }
 
 bool CQueue::dequeue() {

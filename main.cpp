@@ -33,19 +33,20 @@ void testTemplated() {
 
 int main() {
 
-  testTemplated();
+  // testTemplated();
 #if 1
   CQueue obj{"first.bq", 40, 10};
   uint8_t dq_buf[45]{0};
-  uint8_t buf[] = "b - bahre to dadam del o din ey sanama";
+  uint8_t buf[] = "Q - bahre to dadam del o din ey sanama";
 
   for (int i = 0; i < 12; i++) {
     buf[0] = (char)((i + 48));
+    printf("writing %s\n", buf);
     obj.enqueue((char *)buf, sizeof(buf));
   }
 
   char print_buf[40]{0};
-  obj.printer(print_buf, [](int idx, char *item) { PRINT("%d %s\n", idx, item); });
+  obj.printer(print_buf, [](int idx, char *item) { PRINT("eee %d %s\n", idx, item); });
 
   char test[3][40];
   PRINT("-------------------------------------- %s\n", "working or not");
@@ -64,7 +65,6 @@ int main() {
   PRINT("--------------------------------------11\n");
   for (int i = 0; i < 5; i++) {
     if (obj.head((char *)dq_buf, sizeof(dq_buf), true)) {
-      // strcpy(dq_buf, (char *)dq_buf);
       PRINT("%s\n", dq_buf);
     }
   }
