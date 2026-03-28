@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <cstring>
 #include <errno.h>
 #include <cstdlib>
@@ -38,7 +39,7 @@ Queue Bucket::getQueue(const char *name) {
 }
 
 bool Bucket::getExistingQueue(const char *name, Queue *queue) {
-  struct stat st;
+  struct stat st = {};
   char fullPath[100] = {0};
   snprintf(fullPath, 100, "%s/%s", this->mBucketPath, name);
   if (stat(fullPath, &st) == 0) {
@@ -71,12 +72,27 @@ const char *Bucket::getPath() const { return this->mBucketPath; }
 
 void Bucket::list(bool showSize) const {
   char *entry = nullptr;
-  struct stat st;
+  /*struct stat st;*/
   bucket::Iterator iter{this->getPath()};
   printf("listing bucket in: %s :------>\n", this->getPath());
   while ((entry = iter.next())) {
     printf("- %s \n", entry);
   }
+}
+
+size_t Bucket::getDirSize() const {
+  char *entry = nullptr;
+  struct stat st = {};
+  bucket::Iterator iter{this->getPath()};
+  size_t size = 0;
+  char path[320] = {};
+  while ((entry = iter.next())) {
+    /*stat(this->getPath());*/
+    snprintf(path, 319, "%s/%s", this->getPath(), entry);
+    stat(path, &st);
+    size += st.st_size;
+  }
+  return size;
 }
 
 namespace bucket {
@@ -89,21 +105,24 @@ Iterator::Iterator(const char *dir_name) {
   if (dir == nullptr) {
     printf("Unable to open directory\n");
   }
+  entry = nullptr;
 }
 
-void Iterator::from(uint32_t from) {
+bool Iterator::from(uint32_t from) {
   char *entry_name = nullptr;
   char queueName[15] = {0};
   sprintf(queueName, "%08" PRIx32, from);
   while ((entry_name = this->next())) {
     if (strcmp(entry_name, queueName) == 0) {
       long location = telldir(dir);
-      if (location > 0)
+      if (location > 0) {
         seekdir(dir, location - 1);
-      return;
+      }
+      return true;
     }
   }
   printf("Didn't find the entry you wanted to iterate from it\n");
+  return false;
 }
 
 char *Iterator::next() {
