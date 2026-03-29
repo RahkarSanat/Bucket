@@ -33,7 +33,7 @@ public:
   Queue();
   Queue(const char *name, const char *path = nullptr);
   ~Queue();
-  void enqueue(const char *buffer, size_t buffer_len);
+  bool enqueue(const char *buffer, size_t buffer_len);
   bool dequeue(size_t itemLen);
   QueueItem head(char *buffer, size_t *itemLen = nullptr, bool dequeue = false);
   void tail();
@@ -42,14 +42,6 @@ public:
   bool isEmpty() const;
   bool rename(const char *newName, const Bucket *bucket);
   bool move(const Bucket *other);
-  // /**
-  //  * @brief update the Queue Item properties of an item in the queue
-  //  * @param[in] itemProp: new item prop to be replaced
-  //  *
-  //  * @return: true if the operation was succesfull, false otherwise
-  //  */
-  // bool update(const QueueItem &itemProp);
-  // void update(const QueueItem &itemProp, const char *data);
   const char *getName() const;
   const char *getPath() const;
   const QueueMetaData *const getMetaData() const;
@@ -60,8 +52,10 @@ private:
   char path[2 * QUEUE_NAME_MAX_LENGTH] = {0};
   QueueMetaData mState = {};
   bool isAvailable = false;
-  void updateState();
-}; //
+  const char *resolvePath() const;
+  bool updateState();
+  bool updateState(FILE *fd);
+};
 
 // #ifdef __linux__
 template <typename... Args> void PRINT(Args... args) { printf(args...); }

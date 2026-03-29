@@ -1,17 +1,19 @@
 #include <inttypes.h>
-#include "circular_queue.h"
 #include <string.h>
 #include "circular_queue.h"
 #include "file_handle.h"
 
 CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const char *path) {
   FILE *fd = nullptr;
-  strcpy(static_cast<char *>(this->name), name);
+  strncpy(this->name, name, QUEUE_NAME_MAX_LENGTH - 1);
 
   if (path != nullptr) {
-    strcpy(static_cast<char *>(this->path), path);
+    strncpy(this->path, path, sizeof(this->path) - 1);
   }
-  char *valid_name = path == nullptr ? static_cast<char *>(this->name) : static_cast<char *>(this->path);
+  const char *valid_name = resolvePath();
+  if (valid_name == nullptr) {
+    return;
+  }
   struct stat st{};
 
   if (stat(valid_name, &st) == 0) {
@@ -20,7 +22,7 @@ CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const cha
     PRINT("%s circular queue existed! \n", valid_name);
     errno = 0;
     if (fd != nullptr) {
-      fseek(fd, 0L, SEEK_SET); // at the file begining
+      fseek(fd, 0L, SEEK_SET);
       if (fread(&this->mState, sizeof(CQueueMetaData), 1, fd) == 1) {
         if (this->mState.capacity != capacity || this->mState.itemSize != itemSize) {
           PRINT("Warning: Queue exsited with different itemSize and/or capacity\n");
@@ -32,8 +34,7 @@ CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const cha
     FileHandle file{valid_name, "wb"};
     fd = file.getFile();
     if (fd != nullptr) {
-      this->mState = (CQueueMetaData){// TODO prevent updating itemSize
-                                      .head = -1,
+      this->mState = (CQueueMetaData){.head = -1,
                                       .tail = -1,
                                       .itemSize = itemSize,
                                       .capacity = capacity};
@@ -50,18 +51,20 @@ CQueue::CQueue(const char *name, uint16_t itemSize, uint16_t capacity, const cha
 
 CQueue::CQueue(const char *name, const char *path) {
   FILE *fd = nullptr;
-  strcpy(static_cast<char *>(this->name), name);
+  strncpy(this->name, name, QUEUE_NAME_MAX_LENGTH - 1);
   if (path != nullptr) {
-    strcpy(static_cast<char *>(this->path), path);
+    strncpy(this->path, path, sizeof(this->path) - 1);
   }
-  char *valid_name = path == nullptr ? static_cast<char *>(this->name) : static_cast<char *>(this->path);
+  const char *valid_name = resolvePath();
+  if (valid_name == nullptr) {
+    return;
+  }
   struct stat st{};
   if (stat(valid_name, &st) == 0) {
-    PRINT("your same circular queue existed!\n");
     FileHandle file{valid_name, "rb"};
     fd = file.getFile();
     if (fd != nullptr) {
-      fseek(fd, 0L, SEEK_SET); // at the file begining
+      fseek(fd, 0L, SEEK_SET);
       if (fread(&this->mState, sizeof(CQueueMetaData), 1, fd) == 1) {
         isAvailable = true;
       }
@@ -74,7 +77,6 @@ CQueue::CQueue(const char *name, const char *path) {
 
 CQueue::~CQueue() {}
 
-// TODO return operation result status as bool
 bool CQueue::updateState() {
   const char *valid_path = resolvePath();
   if (valid_path == nullptr) {
@@ -82,7 +84,10 @@ bool CQueue::updateState() {
   }
   FileHandle file{valid_path, "r+b"};
   FILE *fd = file.getFile();
+  return updateState(fd);
+}
 
+bool CQueue::updateState(FILE *fd) {
   if (fd == nullptr) {
     PRINT("Failed to open file for updateState\n");
     return false;
@@ -100,11 +105,10 @@ bool CQueue::updateState() {
     return false;
   }
 
-  return false;
+  return true;
 }
 
 bool CQueue::dequeue() {
-  FILE *fd = nullptr;
   const char *valid_path = resolvePath();
   if (valid_path == nullptr) {
     return false;
@@ -113,15 +117,15 @@ bool CQueue::dequeue() {
     PRINT("the circular queue is empty, nothing to dequeue\n");
     return false;
   }
-  FileHandle file{valid_path, "rb"};
-  fd = file.getFile();
+  FileHandle file{valid_path, "r+b"};
+  FILE *fd = file.getFile();
   if (isAvailable && fd != nullptr) {
     if (mState.head == mState.tail) {
       mState.head = mState.tail = -1;
     } else {
       mState.head = (mState.head + 1) % mState.capacity;
     }
-    updateState(); // must be called
+    updateState(fd);
     return true;
   }
   return false;

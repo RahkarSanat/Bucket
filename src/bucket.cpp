@@ -11,7 +11,6 @@ int Bucket::mkdirp(const char *path, mode_t mode) {
   using DeleterT = void (*)(void *);
   std::unique_ptr<char, DeleterT> tmp = std::unique_ptr<char, DeleterT>{strdup(path), [](void *ptr) { free(ptr); }};
 
-  int len = strlen(tmp.get());
   // Iterate over each component of the path
   for (p = tmp.get() + 1; *p; p++) {
     if (*p == '/') {
@@ -33,15 +32,15 @@ int Bucket::mkdirp(const char *path, mode_t mode) {
 }
 
 Queue Bucket::getQueue(const char *name) {
-  char fullPath[100] = {0};
-  snprintf(fullPath, 100, "%s/%s", this->mBucketPath, name);
+  char fullPath[2 * QUEUE_NAME_MAX_LENGTH] = {0};
+  snprintf(fullPath, sizeof(fullPath), "%s/%s", this->mBucketPath, name);
   return Queue{name, fullPath};
 }
 
 bool Bucket::getExistingQueue(const char *name, Queue *queue) {
   struct stat st = {};
-  char fullPath[100] = {0};
-  snprintf(fullPath, 100, "%s/%s", this->mBucketPath, name);
+  char fullPath[2 * QUEUE_NAME_MAX_LENGTH] = {0};
+  snprintf(fullPath, sizeof(fullPath), "%s/%s", this->mBucketPath, name);
   if (stat(fullPath, &st) == 0) {
     *queue = Queue{name, fullPath};
     return true;
@@ -50,19 +49,18 @@ bool Bucket::getExistingQueue(const char *name, Queue *queue) {
 }
 
 void Bucket::init(const char *path) {
-  std::strcpy(this->mBucketPath, path);
+  strncpy(this->mBucketPath, path, QUEUE_NAME_MAX_LENGTH - 1);
+  this->mBucketPath[QUEUE_NAME_MAX_LENGTH - 1] = '\0';
   if (mkdirp(path, 0777) != 0) {
     printf("Failed to [ %s ] directory\n", path);
   }
 }
 
 bool Bucket::removeQueue(const char *name) {
-  // check if queue exists
-  char path[100] = {0};
-  struct stat st;
-  sprintf(path, "%s/%s", this->mBucketPath, name);
+  char path[2 * QUEUE_NAME_MAX_LENGTH] = {0};
+  struct stat st = {};
+  snprintf(path, sizeof(path), "%s/%s", this->mBucketPath, name);
   if (stat(path, &st) == 0) {
-    // remove the file
     errno = 0;
     return remove(path) == 0;
   }
@@ -72,11 +70,24 @@ const char *Bucket::getPath() const { return this->mBucketPath; }
 
 void Bucket::list(bool showSize) const {
   char *entry = nullptr;
-  /*struct stat st;*/
   bucket::Iterator iter{this->getPath()};
   printf("listing bucket in: %s :------>\n", this->getPath());
   while ((entry = iter.next())) {
-    printf("- %s \n", entry);
+    if (strcmp(entry, ".") == 0 || strcmp(entry, "..") == 0) {
+      continue;
+    }
+    if (showSize) {
+      struct stat st = {};
+      char path[320] = {};
+      snprintf(path, sizeof(path), "%s/%s", this->getPath(), entry);
+      if (stat(path, &st) == 0) {
+        printf("- %s (%ld bytes)\n", entry, (long)st.st_size);
+      } else {
+        printf("- %s \n", entry);
+      }
+    } else {
+      printf("- %s \n", entry);
+    }
   }
 }
 
@@ -87,8 +98,10 @@ size_t Bucket::getDirSize() const {
   size_t size = 0;
   char path[320] = {};
   while ((entry = iter.next())) {
-    /*stat(this->getPath());*/
-    snprintf(path, 319, "%s/%s", this->getPath(), entry);
+    if (strcmp(entry, ".") == 0 || strcmp(entry, "..") == 0) {
+      continue;
+    }
+    snprintf(path, sizeof(path), "%s/%s", this->getPath(), entry);
     stat(path, &st);
     size += st.st_size;
   }
@@ -99,7 +112,8 @@ namespace bucket {
 
 Iterator::Iterator(const char *dir_name) {
   if (dir_name != nullptr) {
-    memcpy(mDirectoryName, dir_name, strlen(dir_name) + 1);
+    strncpy(mDirectoryName, dir_name, sizeof(mDirectoryName) - 1);
+    mDirectoryName[sizeof(mDirectoryName) - 1] = '\0';
   }
   dir = opendir(mDirectoryName);
   if (dir == nullptr) {
@@ -111,7 +125,7 @@ Iterator::Iterator(const char *dir_name) {
 bool Iterator::from(uint32_t from) {
   char *entry_name = nullptr;
   char queueName[15] = {0};
-  sprintf(queueName, "%08" PRIx32, from);
+  snprintf(queueName, sizeof(queueName), "%08" PRIx32, from);
   while ((entry_name = this->next())) {
     if (strcmp(entry_name, queueName) == 0) {
       long location = telldir(dir);

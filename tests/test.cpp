@@ -86,7 +86,7 @@ TEST_CASE("Queue: isEmpty on new queue") {
 
 TEST_CASE("Queue: isEmpty false after enqueue") {
   Queue q{"q_notempty"};
-  q.enqueue("data", 5);
+  REQUIRE(q.enqueue("data", 5) == true);
   REQUIRE(q.isEmpty() == false);
   cleanFile("q_notempty");
 }
@@ -135,41 +135,28 @@ TEST_CASE("Queue: head on empty queue returns check=2") {
   cleanFile("q_headempty");
 }
 
-TEST_CASE("Queue: head with dequeue=true reads data and sets check=1") {
+TEST_CASE("Queue: head with dequeue=true advances head and reads next") {
   Queue q{"q_headdeq"};
-  const char *s1 = "first";
-  q.enqueue(s1, strlen(s1) + 1);
-
-  char buffer[32] = {0};
-  size_t item_len = 0;
-
-  // head() opens file as "rb", so the fwrite for check=1 fails silently.
-  // The returned item has check=1 (set in memory) and data is read correctly.
-  QueueItem item = q.head(buffer, &item_len, true);
-  REQUIRE(item.check == 1);
-  REQUIRE(strcmp(buffer, s1) == 0);
-  REQUIRE(item_len == strlen(s1) + 1);
-  cleanFile("q_headdeq");
-}
-
-TEST_CASE("Queue: dequeue then head reads next item") {
-  Queue q{"q_deq_next"};
   const char *s1 = "first";
   const char *s2 = "second";
   q.enqueue(s1, strlen(s1) + 1);
   q.enqueue(s2, strlen(s2) + 1);
 
-  // use dequeue() (which opens r+b and works) to advance head
   char buffer[32] = {0};
   size_t item_len = 0;
-  q.head(buffer, &item_len);
-  REQUIRE(q.dequeue(item_len) == true);
 
-  // next head should be second item
+  // head with dequeue=true should read data and advance head
+  QueueItem item = q.head(buffer, &item_len, true);
+  REQUIRE(item.check == 1);
+  REQUIRE(strcmp(buffer, s1) == 0);
+  REQUIRE(item_len == strlen(s1) + 1);
+
+  // next head should return second item
   memset(buffer, 0, sizeof(buffer));
-  q.head(buffer, &item_len);
+  item = q.head(buffer, &item_len);
   REQUIRE(strcmp(buffer, s2) == 0);
-  cleanFile("q_deq_next");
+  REQUIRE(item_len == strlen(s2) + 1);
+  cleanFile("q_headdeq");
 }
 
 TEST_CASE("Queue: at with invalid index returns check=2") {
@@ -195,11 +182,11 @@ TEST_CASE("Queue: at with buffer reads data correctly") {
 
   // Read second item with buffer (index=2)
   char buffer[32] = {0};
-  QueueItem item2 = q.at(2, buffer);
+  size_t item_len = 0;
+  QueueItem item2 = q.at(2, buffer, &item_len);
   REQUIRE(item2.check == 0);
   REQUIRE(item2.index == 2);
-  // Note: at() does not set *itemLen (source bug), use item.bytesLen instead
-  REQUIRE(item2.bytesLen == strlen(s2) + 1);
+  REQUIRE(item_len == strlen(s2) + 1);
   REQUIRE(strcmp(buffer, s2) == 0);
   cleanFile("q_at_buf");
 }
@@ -277,6 +264,30 @@ TEST_CASE("Queue: byteSize returns file size") {
   off_t after_size = q.byteSize();
   REQUIRE(after_size > initial_size);
   rmrf("test_bytesize_dir");
+}
+
+TEST_CASE("Queue: enqueue returns bool") {
+  Queue q{"q_ret_bool"};
+  REQUIRE(q.enqueue("hello", 6) == true);
+  REQUIRE(q.getMetaData()->count == 1);
+  cleanFile("q_ret_bool");
+}
+
+TEST_CASE("Queue: byteSize works with name-only queue") {
+  cleanFile("q_bytesize_name");
+  Queue q{"q_bytesize_name"};
+  off_t size = q.byteSize();
+  REQUIRE(size == (off_t)sizeof(QueueMetaData));
+  q.enqueue("test", 5);
+  REQUIRE(q.byteSize() > size);
+  cleanFile("q_bytesize_name");
+}
+
+TEST_CASE("Queue: rename with null bucket returns false") {
+  Queue q{"q_rename_null"};
+  q.enqueue("data", 5);
+  REQUIRE(q.rename("newname", nullptr) == false);
+  cleanFile("q_rename_null");
 }
 
 // ──────────────────────────────────────────────
@@ -420,6 +431,21 @@ TEST_CASE("CQueue: head with null buffer returns false") {
   cleanFile(fname);
 }
 
+TEST_CASE("CQueue: enqueue with exact itemSize returns true") {
+  const char *fname = "cq_exact.cq";
+  cleanFile(fname);
+  {
+    CQueue q{fname, 16, 10};
+    char data[16] = "exact size fit";
+    REQUIRE(q.enqueue(data, 16) == true);
+
+    char buffer[16] = {0};
+    REQUIRE(q.head(buffer, 16) == true);
+    REQUIRE(strcmp(buffer, "exact size fit") == 0);
+  }
+  cleanFile(fname);
+}
+
 TEST_CASE("CQueue: enqueue with object larger than itemSize returns false") {
   const char *fname = "cq_too_big.cq";
   {
@@ -440,20 +466,16 @@ TEST_CASE("CQueue: templated enqueue/head with struct") {
   const char *fname = "cq_struct.cq";
   cleanFile(fname);
   {
-    // itemSize = struct size + 1 so the padding path fires with only 1 byte of padding
-    // (avoids buffer overflow in the source's fwrite(&wasted, 1, expected_size, fd))
-    uint16_t item_size = sizeof(TestStruct) + 1;
+    uint16_t item_size = sizeof(TestStruct);
     CQueue q{fname, item_size, 10};
     TestStruct input = {.x = 42, .y = -7, .label = "point"};
     REQUIRE(q.enqueue(&input, sizeof(TestStruct)) == true);
 
-    // buffer for head must be >= itemSize
-    char read_buf[sizeof(TestStruct) + 4] = {0};
-    REQUIRE(q.head(read_buf, item_size) == true);
-    TestStruct *output = reinterpret_cast<TestStruct *>(read_buf);
-    REQUIRE(output->x == 42);
-    REQUIRE(output->y == -7);
-    REQUIRE(strcmp(output->label, "point") == 0);
+    TestStruct output = {};
+    REQUIRE(q.head(&output, item_size) == true);
+    REQUIRE(output.x == 42);
+    REQUIRE(output.y == -7);
+    REQUIRE(strcmp(output.label, "point") == 0);
   }
   cleanFile(fname);
 }
@@ -659,7 +681,7 @@ TEST_CASE("Bucket: removeQueue returns false for non-existent") {
   rmrf("test_b_rmq_no");
 }
 
-TEST_CASE("Bucket: getDirSize returns non-zero for populated bucket") {
+TEST_CASE("Bucket: getDirSize returns correct total size") {
   rmrf("test_b_dirsize"); // clean start
   Bucket bucket;
   bucket.init("test_b_dirsize");
@@ -669,23 +691,21 @@ TEST_CASE("Bucket: getDirSize returns non-zero for populated bucket") {
   q2.enqueue("more data", 10);
 
   size_t dir_size = bucket.getDirSize();
-  // getDirSize iterates all entries including . and .., so it includes
-  // directory sizes. Just verify it's larger than the queue files.
+  // getDirSize now skips . and .., so it should match the sum of file sizes
   struct stat st1, st2;
   stat("test_b_dirsize/a", &st1);
   stat("test_b_dirsize/b", &st2);
-  size_t files_size = st1.st_size + st2.st_size;
-  REQUIRE(dir_size >= files_size);
-  REQUIRE(dir_size > 0);
+  REQUIRE(dir_size == (size_t)(st1.st_size + st2.st_size));
   rmrf("test_b_dirsize");
 }
 
-TEST_CASE("Bucket: list smoke test") {
+TEST_CASE("Bucket: list smoke test and skips dot entries") {
+  rmrf("test_b_list");
   Bucket bucket;
   bucket.init("test_b_list");
   bucket.getQueue("x");
   bucket.getQueue("y");
-  // just verify it doesn't crash
+  // just verify it doesn't crash; list() now skips . and ..
   REQUIRE_NOTHROW(bucket.list());
   REQUIRE_NOTHROW(bucket.list(true));
   rmrf("test_b_list");

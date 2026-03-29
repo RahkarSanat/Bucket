@@ -1,16 +1,13 @@
 #ifndef CIRCULAR_QUEUE_H
 #define CIRCULAR_QUEUE_H
 
+#include <cerrno>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <stdint.h>
-#include <ostream>
-#include <array>
 #include "file_handle.h"
 #include "queue.h"
-
-#define CIRCULAR_QUEUE_CAPACITY 6
 
 struct CQueueMetaData {
   int32_t head;
@@ -53,9 +50,9 @@ public:
       return false;
     }
 
-    FILE *fd = nullptr;
-    FileHandle file{valid_path, "rb"};
-    fd = file.getFile();
+    const char *mode = dequeue ? "r+b" : "rb";
+    FileHandle file{valid_path, mode};
+    FILE *fd = file.getFile();
 
     if (fd == nullptr) {
       return false;
@@ -82,13 +79,12 @@ public:
       } else {
         mState.head = (mState.head + 1) % mState.capacity;
       }
-      updateState(); // must be called
+      updateState(fd);
     }
     return true;
   }
 
   template <typename T> bool enqueue(T *object, uint16_t objectLen) {
-    FILE *fd = nullptr;
     const char *valid_path = resolvePath();
     if (valid_path == nullptr) {
       return false;
@@ -115,7 +111,7 @@ public:
     }
 
     FileHandle file{valid_path, "r+b"};
-    fd = file.getFile();
+    FILE *fd = file.getFile();
     if (fd == nullptr) {
       PRINT("Error: fd == nullptr\n");
       return false;
@@ -125,61 +121,38 @@ public:
       return false;
     }
     size_t res = fwrite(object, objectLen, 1, fd);
-    // if the written size is less than the queue initialized item size, then fill it with zero
     if (res != 1) {
-      PRINT("Error: fhat the wuck\n");
+      PRINT("Error: fwrite failed in enqueue\n");
+      return false;
     }
-    if (objectLen < mState.itemSize && res == 1) {
-      char wasted = 0;
-      auto expected_size = mState.itemSize - objectLen;
-      printf("%d %d %d\n", mState.itemSize, objectLen, expected_size);
-      if (fwrite(&wasted, 1, expected_size, fd) == expected_size) {
-        file.explicitClose();
-        updateState();
-        return true;
+    // if the written size is less than the queue initialized item size, then fill it with zero
+    if (objectLen < mState.itemSize) {
+      auto padding_size = mState.itemSize - objectLen;
+      // write zeros in chunks to avoid VLA
+      char zero_chunk[64] = {0};
+      auto remaining = padding_size;
+      while (remaining > 0) {
+        auto chunk = remaining > sizeof(zero_chunk) ? sizeof(zero_chunk) : remaining;
+        if (fwrite(zero_chunk, 1, chunk, fd) != chunk) {
+          PRINT("Error: fwrite padding failed\n");
+          return false;
+        }
+        remaining -= chunk;
       }
     }
-    return false;
+    updateState(fd);
+    return true;
   }
 
-  // void CQueue::printer() {
-  //   FILE *fd = nullptr;
-  //   errno = 0;
-  //   char *validPath = strlen(this->path) == 0 ? this->name : this->path;
-  //   FileHandle file{validPath, "rb"};
-  //   fd = file.getFile();
-  //   PRINT("asdfasdfasdfasfdasdfasfdsadfasf %d %d %p\n", this->mState.head, this->isAvailable, fd);
-  //   // head == -1 means queue is empty
-  //   if (this->mState.head == -1) {
-  //     PRINT("the circular queue is empty %d %" PRIi32 "\n", this->mState.itemSize, this->mState.tail);
-  //   }
-  //
-  //   if (this->isAvailable && fd != nullptr) {
-  //     auto state = this->getState();
-  //     char buffer[state.itemSize]{0};
-  //     while (state.head != -1 || state.tail != -1) {
-  //       fseek(fd, state.head * state.itemSize + sizeof(CQueueMetaData), SEEK_SET);
-  //       fread(static_cast<char *>(buffer), state.itemSize, 1, fd);
-  //       PRINT("%d %s\n", state.head, buffer);
-  //       if (state.head == state.tail) {
-  //         state.head = state.tail = -1;
-  //       } else {
-  //         state.head = (state.head + 1) % state.capacity;
-  //       }
-  //     }
-  //   }
-  // }
   template <typename T, typename Formatter> void printer(T *buffer, Formatter fmt) {
-    FILE *fd = nullptr;
     errno = 0;
     const char *valid_path = resolvePath();
     if (valid_path == nullptr) {
-      printf("FAILED TO RESOLVE path\n");
       return;
     }
 
     FileHandle file{valid_path, "rb"};
-    fd = file.getFile();
+    FILE *fd = file.getFile();
     // head == -1 means queue is empty
     if (mState.head == -1) {
       PRINT("the circular queue is empty %d %" PRIi32 "\n", mState.itemSize, mState.tail);
@@ -189,13 +162,10 @@ public:
       auto state = getState();
 
       while (state.head != -1 || state.tail != -1) {
-        // PRINT("---- Stats: %d %d %p\n", state.head, state.tail, isAvailable, fd);
         if (fseek(fd, (static_cast<long>(state.head) * state.itemSize) + sizeof(CQueueMetaData), SEEK_SET) != 0) {
           return;
         }
-        // fread(buffer, state.itemSize, 1, fd);
         if (fread(buffer, state.itemSize, 1, fd) != 1) {
-          // PRINT("End is %d %d\n", state.head, state.tail);
           return;
         }
         fmt(state.head, buffer);
@@ -218,6 +188,7 @@ private:
   CQueueMetaData mState{};
   bool isAvailable = false;
   bool updateState();
+  bool updateState(FILE *fd);
 };
 
 #endif // CIRCULAR_QUEUE_H
